@@ -482,4 +482,19 @@ body.parent-mode .parent-form {
     border-radius: 10px;
     font-weight: 700;
     cursor: pointer;
+
+    /* Przycisk edycji celów – widoczny tylko w Trybie Rodzica */
+.btn-edit-cp {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--accent-purple);
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-left: 6px;
+}
+
+body.parent-mode .btn-edit-cp {
+    display: inline-block;
+}
 }
