@@ -49,7 +49,12 @@
             -webkit-text-fill-color: transparent;
         }
 
-        .btn-lock {
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-header {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-sub);
@@ -60,13 +65,28 @@
             transition: all 0.2s ease;
         }
 
-        .btn-lock.unlocked {
+        .btn-header.unlocked {
             background: rgba(239, 68, 68, 0.2);
             color: var(--accent-red);
             border-color: var(--accent-red);
         }
 
-        /* Filtry Dzieci */
+        .btn-header.delete-mode-active {
+            background: var(--accent-red);
+            color: #fff;
+            border-color: var(--accent-red);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        #btn-tile-delete-toggle {
+            display: none;
+        }
+
+        body.parent-mode #btn-tile-delete-toggle {
+            display: inline-block;
+        }
+
+        /* Filtry Osób */
         .children-selector {
             display: flex;
             gap: 10px;
@@ -195,7 +215,7 @@
             display: flex;
         }
 
-        /* Panel Dolny z Kafelkami i Wyszukiwarką */
+        /* Panel Dolny z Kafelkami */
         .bottom-panel {
             position: fixed;
             bottom: 15px;
@@ -241,13 +261,20 @@
             padding-bottom: 6px;
         }
 
-        .quest-tile {
+        .quest-tile-wrapper {
+            display: flex;
+            align-items: center;
             background: rgba(56, 189, 248, 0.1);
             border: 1px solid rgba(56, 189, 248, 0.3);
-            color: var(--text-main);
-            padding: 8px 12px;
             border-radius: 12px;
             white-space: nowrap;
+        }
+
+        .quest-tile {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 8px 10px;
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
@@ -256,7 +283,28 @@
             gap: 6px;
         }
 
-        /* Formularz Tworzenia Kafelków przez Rodzica */
+        .btn-delete-tile {
+            display: none;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            border: none;
+            padding: 8px 10px;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        body.tile-delete-mode .btn-delete-tile {
+            display: inline-block;
+        }
+
+        body.tile-delete-mode .quest-tile-wrapper {
+            border-color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Formularz Rodzica */
         .parent-form {
             display: none;
             flex-direction: column;
@@ -302,9 +350,15 @@
 
     <header>
         <h1>KiddoDo</h1>
-        <button class="btn-lock" id="parent-lock" onclick="toggleParentMode()">
-            <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
-        </button>
+        <div class="header-actions">
+            <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            
+            <button class="btn-header" id="parent-lock" onclick="toggleParentMode()">
+                <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
+            </button>
+        </div>
     </header>
 
     <!-- Filtry Osób -->
@@ -320,18 +374,15 @@
     <!-- Panel Dolny z Kafelkami -->
     <div class="bottom-panel">
         
-        <!-- Wyszukiwarka Kafelków -->
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="tile-search" placeholder="Szukaj Questu..." oninput="filterTilesBySearch()">
         </div>
 
-        <!-- Baza Kafelków (Sortowana Alfabetycznie A-Z) -->
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Formularz Rodzica: Tworzenie Stałego Kafelka -->
         <div class="parent-form">
-            <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">➕ Stwórz nowy kafelek Questu (dla każdego):</span>
+            <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">➕ Stwórz nowy kafelek Questu:</span>
             <div class="parent-inputs">
                 <input type="text" id="new-tile-title" placeholder="Nazwa (np. Mycie naczyń)">
                 <input type="number" id="new-tile-points" placeholder="Pkt" value="10">
@@ -344,52 +395,82 @@
     <script>
         let currentFilter = 'all';
         let isParentMode = false;
+        let isTileDeleteMode = false;
         const PARENT_PIN = "1234";
 
-        // Początkowa baza kafelków
         let questTilesData = [
-            { title: "Ścielenie łóżka", points: 5 },
-            { title: "Zrobienie lekcji", points: 15 },
-            { title: "Wyniesienie śmieci", points: 5 },
-            { title: "Wyprowadzenie psa", points: 10 },
-            { title: "Podlewanie kwiatów", points: 5 },
-            { title: "Sprzątanie pokoju", points: 10 }
+            { id: 1, title: "Ścielenie łóżka", points: 5 },
+            { id: 2, title: "Zrobienie lekcji", points: 15 },
+            { id: 3, title: "Wyniesienie śmieci", points: 5 },
+            { id: 4, title: "Wyprowadzenie psa", points: 10 },
+            { id: 5, title: "Podlewanie kwiatów", points: 5 },
+            { id: 6, title: "Sprzątanie pokoju", points: 10 }
         ];
 
-        // Rysowanie i Sortowanie Kafelków (A-Z)
         function renderTiles() {
             const container = document.getElementById('tiles-container');
             container.innerHTML = '';
 
-            // Sortowanie alfabetyczne A-Z po nazwie
             questTilesData.sort((a, b) => a.title.localeCompare(b.title, 'pl'));
 
             questTilesData.forEach(tile => {
-                const btn = document.createElement('button');
-                btn.className = 'quest-tile';
-                btn.setAttribute('data-title', tile.title.toLowerCase());
-                btn.onclick = () => addQuestFromTile(tile.title, tile.points);
-                btn.innerHTML = `🎯 ${tile.title} (+${tile.points})`;
-                container.appendChild(btn);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'quest-tile-wrapper';
+                wrapper.setAttribute('data-title', tile.title.toLowerCase());
+
+                const safeTitle = tile.title.replace(/'/g, "\\'");
+                
+                wrapper.innerHTML = `
+                    <button class="quest-tile" onclick="addQuestFromTile('${safeTitle}', ${tile.points})">
+                        🎯 ${tile.title} (+${tile.points})
+                    </button>
+                    <button class="btn-delete-tile" onclick="confirmRemoveTile(${tile.id}, '${safeTitle}')" title="Usuń kafelek">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                container.appendChild(wrapper);
             });
         }
 
-        // Wyszukiwarka kafelków w czasie rzeczywistym
+        function toggleTileDeleteMode() {
+            isTileDeleteMode = !isTileDeleteMode;
+            const btn = document.getElementById('btn-tile-delete-toggle');
+            
+            if (isTileDeleteMode) {
+                document.body.classList.add('tile-delete-mode');
+                btn.classList.add('delete-mode-active');
+            } else {
+                document.body.classList.remove('tile-delete-mode');
+                btn.classList.remove('delete-mode-active');
+            }
+        }
+
+        // Usunięcie kafelka wymaga podania PINu Rodzica
+        function confirmRemoveTile(id, title) {
+            const pin = prompt(`Aby usunąć kafelek:\n"${title}"\npodaj PIN rodzica:`);
+            
+            if (pin === PARENT_PIN) {
+                questTilesData = questTilesData.filter(t => t.id !== id);
+                renderTiles();
+            } else if (pin !== null) {
+                alert("Błędny PIN! Kafelek nie został usunięty.");
+            }
+        }
+
         function filterTilesBySearch() {
             const query = document.getElementById('tile-search').value.toLowerCase();
-            const tiles = document.querySelectorAll('.quest-tile');
+            const wrappers = document.querySelectorAll('.quest-tile-wrapper');
 
-            tiles.forEach(tile => {
-                const title = tile.getAttribute('data-title');
+            wrappers.forEach(w => {
+                const title = w.getAttribute('data-title');
                 if (title.includes(query)) {
-                    tile.style.display = 'flex';
+                    w.style.display = 'flex';
                 } else {
-                    tile.style.display = 'none';
+                    w.style.display = 'none';
                 }
             });
         }
 
-        // Dodawanie nowego kafelka przez Rodzica
         function createNewTile() {
             const titleInput = document.getElementById('new-tile-title');
             const pointsInput = document.getElementById('new-tile-points');
@@ -399,24 +480,20 @@
 
             if (!title) return alert("Wpisz nazwę Questu!");
 
-            // Dodaj do bazy i przeładuj kafelki (automatycznie posortuje A-Z)
-            questTilesData.push({ title: title, points: points });
+            questTilesData.push({ id: Date.now(), title: title, points: points });
             renderTiles();
 
             titleInput.value = '';
-            document.getElementById('tile-search').value = ''; // zresetuj wyszukiwarkę
+            document.getElementById('tile-search').value = '';
             filterTilesBySearch();
         }
 
-        // Kliknięcie w kafelek -> Przypisanie Questu
         function addQuestFromTile(title, points) {
             let assignee = currentFilter;
-            
             if (assignee === 'all') {
                 const choice = confirm("Czy dodajesz ten Quest dla Pawła? (Kliknij 'Anuluj' jeśli dla Madzi)");
                 assignee = choice ? 'Paweł' : 'Madzia';
             }
-
             createQuestCard(title, points, assignee);
         }
 
@@ -460,8 +537,11 @@
                 }
             } else {
                 isParentMode = false;
+                isTileDeleteMode = false;
                 document.body.classList.remove('parent-mode');
+                document.body.classList.remove('tile-delete-mode');
                 lockBtn.classList.remove('unlocked');
+                document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
                 lockIcon.className = "fa-solid fa-lock";
             }
         }
@@ -499,7 +579,6 @@
             card.remove();
         }
 
-        // Startowe wyrenderowanie kafelków A-Z przy wczytaniu strony
         renderTiles();
     </script>
 </body>
