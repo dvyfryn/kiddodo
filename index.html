@@ -13,6 +13,7 @@
             --accent-green: #22c55e;
             --accent-purple: #a855f7;
             --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
             --text-main: #f8fafc;
             --text-sub: #94a3b8;
         }
@@ -28,7 +29,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            padding: 20px 15px 100px 15px;
+            padding: 20px 15px 120px 15px;
             max-width: 500px;
             margin: 0 auto;
         }
@@ -65,7 +66,7 @@
             border-color: var(--accent-red);
         }
 
-        /* Sekcja Filtrowania / Dzieci */
+        /* Filtry */
         .children-selector {
             display: flex;
             gap: 10px;
@@ -96,7 +97,7 @@
             box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
         }
 
-        /* Lista zadań */
+        /* Lista Questów */
         .task-list {
             display: flex;
             flex-direction: column;
@@ -111,7 +112,6 @@
             align-items: center;
             justify-content: space-between;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: transform 0.1s ease, opacity 0.2s ease;
         }
 
         .task-card.completed {
@@ -136,8 +136,8 @@
         }
 
         .points-badge {
-            background: rgba(56, 189, 248, 0.15);
-            color: var(--accent-blue);
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-amber);
             padding: 2px 8px;
             border-radius: 8px;
             font-size: 0.85rem;
@@ -177,7 +177,7 @@
             color: #000;
         }
 
-        /* Kosz - domyślnie UKRYTY */
+        /* Kosz - ukryty bez Rodzica */
         .btn-delete {
             background: rgba(239, 68, 68, 0.15);
             color: var(--accent-red);
@@ -187,20 +187,19 @@
             border-radius: 10px;
             font-size: 0.9rem;
             cursor: pointer;
-            display: none; /* Domyślnie niewidoczny */
+            display: none;
             align-items: center;
             justify-content: center;
         }
 
-        /* Pokazuj kosz tylko gdy włączony jest Tryb Rodzica */
         body.parent-mode .btn-delete {
             display: flex;
         }
 
-        /* Formularz dodawania */
-        .add-task-form {
+        /* Dziecięcy Panel Wyboru Questów */
+        .bottom-panel {
             position: fixed;
-            bottom: 20px;
+            bottom: 15px;
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - 30px);
@@ -208,13 +207,60 @@
             background: #1e293b;
             padding: 12px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            display: flex;
-            gap: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .add-task-form input, .add-task-form select {
+        .kids-quest-picker {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .kids-title {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .quest-tiles {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .quest-tile {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 12px;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Panel Rodzica (Ręczne wpisywanie) */
+        .parent-form {
+            display: none;
+            gap: 8px;
+        }
+
+        body.parent-mode .parent-form {
+            display: flex;
+        }
+
+        body.parent-mode .kids-quest-picker {
+            display: none;
+        }
+
+        .parent-form input, .parent-form select {
             background: #0f172a;
             border: 1px solid rgba(255,255,255,0.1);
             color: #fff;
@@ -223,12 +269,12 @@
             font-size: 0.9rem;
         }
 
-        .add-task-form input[type="text"] { flex: 2; }
-        .add-task-form input[type="number"] { width: 60px; text-align: center; }
+        .parent-form input[type="text"] { flex: 2; }
+        .parent-form input[type="number"] { width: 60px; text-align: center; }
 
         .btn-add {
-            background: var(--accent-blue);
-            color: #000;
+            background: var(--accent-purple);
+            color: #fff;
             border: none;
             padding: 0 15px;
             border-radius: 10px;
@@ -253,7 +299,7 @@
         <button class="chip" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
 
-    <!-- Lista zadań -->
+    <!-- Lista Questów -->
     <div class="task-list" id="tasks-list">
         <div class="task-card" data-assignee="Paweł">
             <div class="task-info">
@@ -265,36 +311,41 @@
                 <button class="btn-check" onclick="toggleTask(this)"><i class="fa-solid fa-check"></i></button>
             </div>
         </div>
-
-        <div class="task-card" data-assignee="Madzia">
-            <div class="task-info">
-                <div class="task-title">Zrób lekcje <span class="points-badge">+15 pkt</span></div>
-                <div class="assignee-badge"><i class="fa-solid fa-user"></i> Madzia</div>
-            </div>
-            <div class="task-actions">
-                <button class="btn-delete" onclick="deleteTask(this)"><i class="fa-solid fa-trash"></i></button>
-                <button class="btn-check" onclick="toggleTask(this)"><i class="fa-solid fa-check"></i></button>
-            </div>
-        </div>
     </div>
 
-    <!-- Formularz dodawania nowego zadania -->
-    <div class="add-task-form">
-        <input type="text" id="task-title" placeholder="Nowe zadanie...">
-        <select id="task-assignee">
-            <option value="Paweł">Paweł</option>
-            <option value="Madzia">Madzia</option>
-        </select>
-        <input type="number" id="task-points" placeholder="Pkt" value="5">
-        <button class="btn-add" onclick="addNewTask()"><i class="fa-solid fa-plus"></i></button>
+    <!-- Panel Dolny -->
+    <div class="bottom-panel">
+        
+        <!-- Widok dla dzieci: Gotowe Kafelki Questów -->
+        <div class="kids-quest-picker">
+            <div class="kids-title">Wybierz swój Quest i dodaj na listę:</div>
+            <div class="quest-tiles">
+                <button class="quest-tile" onclick="addPresetQuest('Ścielenie łóżka', 5)">🛏️ Łóżko (+5)</button>
+                <button class="quest-tile" onclick="addPresetQuest('Sprzątanie pokoju', 10)">🧹 Pokój (+10)</button>
+                <button class="quest-tile" onclick="addPresetQuest('Zrobienie lekcji', 15)">📚 Lekcje (+15)</button>
+                <button class="quest-tile" onclick="addPresetQuest('Wyniesienie śmieci', 5)">🗑️ Śmieci (+5)</button>
+                <button class="quest-tile" onclick="addPresetQuest('Mydło i zęby', 5)">🪥 Zęby (+5)</button>
+            </div>
+        </div>
+
+        <!-- Widok dla rodzica: Ręczne wpisywanie własnych Questów -->
+        <div class="parent-form">
+            <input type="text" id="parent-task-title" placeholder="Własny Quest...">
+            <select id="parent-task-assignee">
+                <option value="Paweł">Paweł</option>
+                <option value="Madzia">Madzia</option>
+            </select>
+            <input type="number" id="parent-task-points" placeholder="Pkt" value="10">
+            <button class="btn-add" onclick="addParentQuest()"><i class="fa-solid fa-plus"></i></button>
+        </div>
+
     </div>
 
     <script>
         let currentFilter = 'all';
         let isParentMode = false;
-        const PARENT_PIN = "1234"; // Twój PIN rodzica
+        const PARENT_PIN = "1234";
 
-        // Włączanie / wyłączanie trybu rodzica
         function toggleParentMode() {
             const lockBtn = document.getElementById('parent-lock');
             const lockIcon = document.getElementById('lock-icon');
@@ -310,7 +361,6 @@
                     alert("Błędny PIN!");
                 }
             } else {
-                // Wyłącz tryb rodzica
                 isParentMode = false;
                 document.body.classList.remove('parent-mode');
                 lockBtn.classList.remove('unlocked');
@@ -351,13 +401,30 @@
             });
         }
 
-        function addNewTask() {
-            const title = document.getElementById('task-title').value;
-            const assignee = document.getElementById('task-assignee').value;
-            const points = document.getElementById('task-points').value || 5;
+        // Dodawanie Questu z kafelka (dla dzieci)
+        function addPresetQuest(title, points) {
+            let assignee = currentFilter;
+            if (assignee === 'all') {
+                const choice = confirm("Czy to Quest dla Pawła? (Anuluj = dla Madzi)");
+                assignee = choice ? 'Paweł' : 'Madzia';
+            }
+            createQuestCard(title, points, assignee);
+        }
 
-            if(!title) return alert("Wpisz nazwę zadania!");
+        // Dodawanie Questu ręcznie (dla Rodzica)
+        function addParentQuest() {
+            const title = document.getElementById('parent-task-title').value;
+            const assignee = document.getElementById('parent-task-assignee').value;
+            const points = document.getElementById('parent-task-points').value || 10;
 
+            if(!title) return alert("Wpisz nazwę Questu!");
+
+            createQuestCard(title, points, assignee);
+            document.getElementById('parent-task-title').value = '';
+        }
+
+        // Tworzenie karty Questu
+        function createQuestCard(title, points, assignee) {
             const list = document.getElementById('tasks-list');
             const newTask = document.createElement('div');
             newTask.className = 'task-card';
@@ -375,7 +442,6 @@
             `;
 
             list.appendChild(newTask);
-            document.getElementById('task-title').value = '';
 
             if (currentFilter !== 'all' && currentFilter !== assignee) {
                 newTask.style.display = 'none';
