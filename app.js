@@ -10,7 +10,7 @@ let scores = {
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-// Indywidualne cele dla każdego dziecka
+// Indywidualne cele dla każdego dziecka (z możliwością edycji)
 let individualCheckpoints = [
     { id: 1, name: "🍦 Wyjście na lody", target: 30 },
     { id: 2, name: "🎬 Wieczór filmowy z przekąskami", target: 80 },
@@ -29,8 +29,32 @@ let questTilesData = [
     { id: 6, title: "Sprzątanie pokoju", points: 10 }
 ];
 
+// Efektowne wielokolorowe konfetti + wybuch gwiazdek
 function triggerConfetti() {
-    confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+    // Pierwsza fala - tradycyjne konfetti
+    confetti({ 
+        particleCount: 100, 
+        spread: 100, 
+        origin: { y: 0.6 } 
+    });
+    
+    // Druga fala po 200ms - złote i fioletowe gwiazdki
+    setTimeout(() => {
+        confetti({
+            particleCount: 50,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ['#a855f7', '#f59e0b', '#38bdf8']
+        });
+        confetti({
+            particleCount: 50,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ['#a855f7', '#f59e0b', '#38bdf8']
+        });
+    }, 200);
 }
 
 function switchPeriod(period, tabBtn) {
@@ -70,7 +94,10 @@ function updateDashboard() {
         item.className = 'checkpoint-item';
         item.innerHTML = `
             <div class="checkpoint-header">
-                <span>${cp.name}</span>
+                <span>
+                    ${cp.name} 
+                    <button class="btn-edit-cp" onclick="editCheckpoint(${cp.id})" title="Edytuj cel"><i class="fa-solid fa-pen"></i></button>
+                </span>
                 <span>${kidScore} / ${cp.target} pkt</span>
             </div>
             <div class="progress-bar-bg">
@@ -83,6 +110,7 @@ function updateDashboard() {
         container.appendChild(item);
     });
 
+    // Cel rodzinny
     const totalYearly = scores.Paweł.yearly + scores.Madzia.yearly;
     const sharedPercent = Math.min(100, Math.round((totalYearly / sharedYearlyCheckpoint.target) * 100));
     const isSharedReady = totalYearly >= sharedYearlyCheckpoint.target;
@@ -91,7 +119,10 @@ function updateDashboard() {
     sharedItem.className = 'checkpoint-item shared';
     sharedItem.innerHTML = `
         <div class="checkpoint-header">
-            <span>${sharedYearlyCheckpoint.name}</span>
+            <span>
+                ${sharedYearlyCheckpoint.name}
+                <button class="btn-edit-cp" onclick="editSharedCheckpoint()" title="Edytuj cel rodzinny"><i class="fa-solid fa-pen"></i></button>
+            </span>
             <span>${totalYearly} / ${sharedYearlyCheckpoint.target} pkt</span>
         </div>
         <div class="progress-bar-bg">
@@ -102,6 +133,41 @@ function updateDashboard() {
         </button>
     `;
     container.appendChild(sharedItem);
+}
+
+// Edycja Celu Indywidualnego
+function editCheckpoint(id) {
+    if (!isParentMode) return alert("Musisz odblokować Tryb Rodzica, aby edytować cele!");
+    
+    const cp = individualCheckpoints.find(c => c.id === id);
+    if (!cp) return;
+
+    const newName = prompt("Podaj nową nazwę celu/nagrody:", cp.name);
+    if (newName === null) return;
+
+    const newTarget = prompt("Podaj nową próg punktowy:", cp.target);
+    if (newTarget === null) return;
+
+    cp.name = newName.trim() || cp.name;
+    cp.target = parseInt(newTarget) || cp.target;
+
+    updateDashboard();
+}
+
+// Edycja Celu Rodzinnego
+function editSharedCheckpoint() {
+    if (!isParentMode) return alert("Musisz odblokować Tryb Rodzica, aby edytować cel rodzinny!");
+
+    const newName = prompt("Podaj nową nazwę celu rodzinnego:", sharedYearlyCheckpoint.name);
+    if (newName === null) return;
+
+    const newTarget = prompt("Podaj nowy próg punktowy:", sharedYearlyCheckpoint.target);
+    if (newTarget === null) return;
+
+    sharedYearlyCheckpoint.name = newName.trim() || sharedYearlyCheckpoint.name;
+    sharedYearlyCheckpoint.target = parseInt(newTarget) || sharedYearlyCheckpoint.target;
+
+    updateDashboard();
 }
 
 function claimReward(rewardName, winner) {
@@ -300,6 +366,5 @@ function deleteTask(btn) {
     card.remove();
 }
 
-// Inicjalizacja przy otwarciu strony
 renderTiles();
 updateDashboard();
