@@ -4,347 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KiddoDo</title>
+    <!-- Ikony i Konfetti -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent-blue: #38bdf8;
-            --accent-green: #22c55e;
-            --accent-purple: #a855f7;
-            --accent-red: #ef4444;
-            --accent-amber: #f59e0b;
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 20px 15px 180px 15px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        header h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-header {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-sub);
-            padding: 8px 12px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-header.unlocked {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--accent-red);
-            border-color: var(--accent-red);
-        }
-
-        .btn-header.delete-mode-active {
-            background: var(--accent-red);
-            color: #fff;
-            border-color: var(--accent-red);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-        }
-
-        #btn-tile-delete-toggle {
-            display: none;
-        }
-
-        body.parent-mode #btn-tile-delete-toggle {
-            display: inline-block;
-        }
-
-        /* Filtry Osób */
-        .children-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-            background: rgba(30, 41, 59, 0.7);
-            padding: 6px;
-            border-radius: 16px;
-        }
-
-        .chip {
-            flex: 1;
-            padding: 12px 8px;
-            border: none;
-            background: transparent;
-            color: var(--text-sub);
-            font-weight: 600;
-            font-size: 0.95rem;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-
-        .chip.active {
-            background: var(--accent-blue);
-            color: #000;
-            font-weight: 700;
-            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
-        }
-
-        /* Lista Aktywnych Questów */
-        .task-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .task-card {
-            background: var(--card-bg);
-            padding: 16px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .task-card.completed {
-            opacity: 0.5;
-            background: #111827;
-        }
-
-        .task-card.completed .task-title {
-            text-decoration: line-through;
-            color: var(--text-sub);
-        }
-
-        .task-info {
-            flex: 1;
-            padding-right: 10px;
-        }
-
-        .task-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .points-badge {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--accent-amber);
-            padding: 2px 8px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-left: 6px;
-            font-weight: 700;
-        }
-
-        .assignee-badge {
-            display: inline-block;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            margin-top: 4px;
-        }
-
-        .task-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-check {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--accent-green);
-            border: none;
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-check.done {
-            background: var(--accent-green);
-            color: #000;
-        }
-
-        .btn-delete {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--accent-red);
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        body.parent-mode .btn-delete {
-            display: flex;
-        }
-
-        /* Panel Dolny z Kafelkami */
-        .bottom-panel {
-            position: fixed;
-            bottom: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 30px);
-            max-width: 470px;
-            background: #1e293b;
-            padding: 12px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .search-box {
-            position: relative;
-            margin-bottom: 8px;
-        }
-
-        .search-box input {
-            width: 100%;
-            background: #0f172a;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 8px 12px 8px 32px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-sub);
-            font-size: 0.8rem;
-        }
-
-        .quest-tiles {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 6px;
-        }
-
-        .quest-tile-wrapper {
-            display: flex;
-            align-items: center;
-            background: rgba(56, 189, 248, 0.1);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 12px;
-            white-space: nowrap;
-        }
-
-        .quest-tile {
-            background: transparent;
-            border: none;
-            color: var(--text-main);
-            padding: 8px 10px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-delete-tile {
-            display: none;
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--accent-red);
-            border: none;
-            padding: 8px 10px;
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        body.tile-delete-mode .btn-delete-tile {
-            display: inline-block;
-        }
-
-        body.tile-delete-mode .quest-tile-wrapper {
-            border-color: var(--accent-red);
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        /* Formularz Rodzica */
-        .parent-form {
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        body.parent-mode .parent-form {
-            display: flex;
-        }
-
-        .parent-inputs {
-            display: flex;
-            gap: 8px;
-        }
-
-        .parent-form input {
-            background: #0f172a;
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-        }
-
-        .parent-form input[type="text"] { flex: 1; }
-        .parent-form input[type="number"] { width: 75px; text-align: center; }
-
-        .btn-add-tile {
-            background: var(--accent-purple);
-            color: #fff;
-            border: none;
-            padding: 10px;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Plik Stylów CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -354,12 +19,39 @@
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
-            
             <button class="btn-header" id="parent-lock" onclick="toggleParentMode()">
                 <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
             </button>
         </div>
     </header>
+
+    <!-- DASHBOARD RYWALIZACJI -->
+    <div class="dashboard-card">
+        <div class="period-tabs">
+            <button class="period-tab active" onclick="switchPeriod('daily', this)">Dzienny</button>
+            <button class="period-tab" onclick="switchPeriod('weekly', this)">Tygodniowy</button>
+            <button class="period-tab" onclick="switchPeriod('monthly', this)">Miesięczny</button>
+            <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
+        </div>
+
+        <div class="leaderboard">
+            <div class="score-box" id="box-pawel">
+                <span class="crown">👑</span>
+                <div class="name">👦 Paweł</div>
+                <div class="pts" id="score-pawel">0 pkt</div>
+            </div>
+            <div class="score-box" id="box-madzia">
+                <span class="crown">👑</span>
+                <div class="name">👧 Madzia</div>
+                <div class="pts" id="score-madzia">0 pkt</div>
+            </div>
+        </div>
+
+        <div class="checkpoints-title" id="checkpoints-label">
+            <i class="fa-solid fa-trophy"></i> Indywidualne Cele Nagród:
+        </div>
+        <div id="checkpoints-container"></div>
+    </div>
 
     <!-- Filtry Osób -->
     <div class="children-selector">
@@ -373,7 +65,6 @@
 
     <!-- Panel Dolny z Kafelkami -->
     <div class="bottom-panel">
-        
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="tile-search" placeholder="Szukaj Questu..." oninput="filterTilesBySearch()">
@@ -389,197 +80,9 @@
                 <button class="btn-add-tile" onclick="createNewTile()"><i class="fa-solid fa-plus"></i></button>
             </div>
         </div>
-
     </div>
 
-    <script>
-        let currentFilter = 'all';
-        let isParentMode = false;
-        let isTileDeleteMode = false;
-        const PARENT_PIN = "1234";
-
-        let questTilesData = [
-            { id: 1, title: "Ścielenie łóżka", points: 5 },
-            { id: 2, title: "Zrobienie lekcji", points: 15 },
-            { id: 3, title: "Wyniesienie śmieci", points: 5 },
-            { id: 4, title: "Wyprowadzenie psa", points: 10 },
-            { id: 5, title: "Podlewanie kwiatów", points: 5 },
-            { id: 6, title: "Sprzątanie pokoju", points: 10 }
-        ];
-
-        function renderTiles() {
-            const container = document.getElementById('tiles-container');
-            container.innerHTML = '';
-
-            questTilesData.sort((a, b) => a.title.localeCompare(b.title, 'pl'));
-
-            questTilesData.forEach(tile => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'quest-tile-wrapper';
-                wrapper.setAttribute('data-title', tile.title.toLowerCase());
-
-                const safeTitle = tile.title.replace(/'/g, "\\'");
-                
-                wrapper.innerHTML = `
-                    <button class="quest-tile" onclick="addQuestFromTile('${safeTitle}', ${tile.points})">
-                        🎯 ${tile.title} (+${tile.points})
-                    </button>
-                    <button class="btn-delete-tile" onclick="confirmRemoveTile(${tile.id}, '${safeTitle}')" title="Usuń kafelek">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                `;
-                container.appendChild(wrapper);
-            });
-        }
-
-        function toggleTileDeleteMode() {
-            isTileDeleteMode = !isTileDeleteMode;
-            const btn = document.getElementById('btn-tile-delete-toggle');
-            
-            if (isTileDeleteMode) {
-                document.body.classList.add('tile-delete-mode');
-                btn.classList.add('delete-mode-active');
-            } else {
-                document.body.classList.remove('tile-delete-mode');
-                btn.classList.remove('delete-mode-active');
-            }
-        }
-
-        // Usunięcie kafelka wymaga podania PINu Rodzica
-        function confirmRemoveTile(id, title) {
-            const pin = prompt(`Aby usunąć kafelek:\n"${title}"\npodaj PIN rodzica:`);
-            
-            if (pin === PARENT_PIN) {
-                questTilesData = questTilesData.filter(t => t.id !== id);
-                renderTiles();
-            } else if (pin !== null) {
-                alert("Błędny PIN! Kafelek nie został usunięty.");
-            }
-        }
-
-        function filterTilesBySearch() {
-            const query = document.getElementById('tile-search').value.toLowerCase();
-            const wrappers = document.querySelectorAll('.quest-tile-wrapper');
-
-            wrappers.forEach(w => {
-                const title = w.getAttribute('data-title');
-                if (title.includes(query)) {
-                    w.style.display = 'flex';
-                } else {
-                    w.style.display = 'none';
-                }
-            });
-        }
-
-        function createNewTile() {
-            const titleInput = document.getElementById('new-tile-title');
-            const pointsInput = document.getElementById('new-tile-points');
-
-            const title = titleInput.value.trim();
-            const points = parseInt(pointsInput.value) || 10;
-
-            if (!title) return alert("Wpisz nazwę Questu!");
-
-            questTilesData.push({ id: Date.now(), title: title, points: points });
-            renderTiles();
-
-            titleInput.value = '';
-            document.getElementById('tile-search').value = '';
-            filterTilesBySearch();
-        }
-
-        function addQuestFromTile(title, points) {
-            let assignee = currentFilter;
-            if (assignee === 'all') {
-                const choice = confirm("Czy dodajesz ten Quest dla Pawła? (Kliknij 'Anuluj' jeśli dla Madzi)");
-                assignee = choice ? 'Paweł' : 'Madzia';
-            }
-            createQuestCard(title, points, assignee);
-        }
-
-        function createQuestCard(title, points, assignee) {
-            const list = document.getElementById('tasks-list');
-            const newTask = document.createElement('div');
-            newTask.className = 'task-card';
-            newTask.setAttribute('data-assignee', assignee);
-            
-            newTask.innerHTML = `
-                <div class="task-info">
-                    <div class="task-title">${title} <span class="points-badge">+${points} pkt</span></div>
-                    <div class="assignee-badge"><i class="fa-solid fa-user"></i> ${assignee}</div>
-                </div>
-                <div class="task-actions">
-                    <button class="btn-delete" onclick="deleteTask(this)"><i class="fa-solid fa-trash"></i></button>
-                    <button class="btn-check" onclick="toggleTask(this)"><i class="fa-solid fa-check"></i></button>
-                </div>
-            `;
-
-            list.appendChild(newTask);
-
-            if (currentFilter !== 'all' && currentFilter !== assignee) {
-                newTask.style.display = 'none';
-            }
-        }
-
-        function toggleParentMode() {
-            const lockBtn = document.getElementById('parent-lock');
-            const lockIcon = document.getElementById('lock-icon');
-
-            if (!isParentMode) {
-                const pin = prompt("Podaj PIN rodzica:");
-                if (pin === PARENT_PIN) {
-                    isParentMode = true;
-                    document.body.classList.add('parent-mode');
-                    lockBtn.classList.add('unlocked');
-                    lockIcon.className = "fa-solid fa-lock-open";
-                } else if (pin !== null) {
-                    alert("Błędny PIN!");
-                }
-            } else {
-                isParentMode = false;
-                isTileDeleteMode = false;
-                document.body.classList.remove('parent-mode');
-                document.body.classList.remove('tile-delete-mode');
-                lockBtn.classList.remove('unlocked');
-                document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
-                lockIcon.className = "fa-solid fa-lock";
-            }
-        }
-
-        function filterTasks(assignee, chipBtn) {
-            currentFilter = assignee;
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            chipBtn.classList.add('active');
-
-            const cards = document.querySelectorAll('.task-card');
-            cards.forEach(card => {
-                const cardAssignee = card.getAttribute('data-assignee');
-                if (assignee === 'all' || cardAssignee === assignee) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-
-        function toggleTask(btn) {
-            const card = btn.closest('.task-card');
-            card.classList.toggle('completed');
-            if(card.classList.contains('completed')) {
-                btn.classList.add('done');
-                btn.innerHTML = '<i class="fa-solid fa-check-double"></i>';
-            } else {
-                btn.classList.remove('done');
-                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
-            }
-        }
-
-        function deleteTask(btn) {
-            const card = btn.closest('.task-card');
-            card.remove();
-        }
-
-        renderTiles();
-    </script>
+    <!-- Główny Skrypt JS -->
+    <script src="app.js"></script>
 </body>
 </html>
