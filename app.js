@@ -1,4 +1,4 @@
-// Wersja: 1.0.0
+// Wersja: 1.1.0
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -22,6 +22,12 @@ const PARENT_PIN = "1234";
 let isHappyHourActive = false;
 let pendingTaskIdForPhoto = null;
 
+// Stałe statusów zadań
+const STATUS_PENDING = 'pending';             // Nowe / do zrobienia przez dziecko
+const STATUS_AWAITING = 'awaiting_approval';   // Wykonane przez dziecko, czeka na rodzica
+const STATUS_CORRECTION = 'needs_correction'; // Odrzucone przez rodzica, wymaga poprawki
+const STATUS_COMPLETED = 'completed';         // Zatwierdzone przez rodzica, punkty przyznane
+
 function getWeekNumber(d) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
@@ -35,10 +41,10 @@ const defaultData = {
     lastResetMonth: new Date().getMonth(),
     lastResetYear: new Date().getFullYear(),
     questTilesData: [
-        { id: 1, title: "Ścielenie łóżka", points: 5 },
-        { id: 2, title: "Zrobienie lekcji", points: 15 },
-        { id: 3, title: "Wyniesienie śmieci", points: 5 },
-        { id: 4, title: "Wyprowadzenie psa", points: 10 }
+        { id: 1, title: "Ścielenie łóżka", points: 5, requiresPhoto: false },
+        { id: 2, title: "Zrobienie lekcji", points: 15, requiresPhoto: false },
+        { id: 3, title: "Wyniesienie śmieci", points: 5, requiresPhoto: false },
+        { id: 4, title: "Wyprowadzenie psa", points: 10, requiresPhoto: true }
     ],
     scores: {
         Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
@@ -71,10 +77,19 @@ function sanitizeAndMergeState(incomingState) {
     if (!incomingState || typeof incomingState !== 'object') return;
 
     if (Array.isArray(incomingState.questTilesData) && incomingState.questTilesData.length > 0) {
-        appState.questTilesData = incomingState.questTilesData;
+        appState.questTilesData = incomingState.questTilesData.map(t => ({
+            ...t,
+            requiresPhoto: t.requiresPhoto !== undefined ? t.requiresPhoto : false
+        }));
     }
     if (Array.isArray(incomingState.activeTasksList)) {
-        appState.activeTasksList = incomingState.activeTasksList;
+        appState.activeTasksList = incomingState.activeTasksList.map(task => {
+            let status = task.status;
+            if (!status) {
+                status = task.completed ? STATUS_COMPLETED : STATUS_PENDING;
+            }
+            return { ...task, status: status };
+        });
     }
     if (incomingState.scores) {
         appState.scores = { ...defaultData.scores, ...incomingState.scores };
@@ -135,14 +150,14 @@ function checkCalendarResets() {
 
 function loadLocalFallback() {
     try {
-        const local = localStorage.getItem('kiddodo_backup_v100');
+        const local = localStorage.getItem('kiddodo_backup_v110');
         if (local) sanitizeAndMergeState(JSON.parse(local));
     } catch (e) {}
 }
 
 function saveLocalFallback() {
     try {
-        localStorage.setItem('kiddodo_backup_v100', JSON.stringify(appState));
+        localStorage.setItem('kiddodo_backup_v110', JSON.stringify(appState));
     } catch (e) {}
 }
 
@@ -222,32 +237,26 @@ function toggleParentMode(state) {
         lockBtn.classList.remove('unlocked');
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
+
+        if (currentFilter === 'Wszyscy') {
+            filterTasks('Paweł', document.getElementById('chip-pawel'));
+        }
     }
 
-    updateVials();
-    updateShopUI();
+    renderAllUI();
 }
 
-function toggleTask(id) {
+// OZNACZANIE ZADANIA PRZEZ DZIECKO
+function kidSubmitTask(id) {
     const task = appState.activeTasksList.find(t => t.id === id);
     if (!task) return;
 
-    if (!task.completed) {
+    if (task.requiresPhoto) {
         pendingTaskIdForPhoto = id;
         document.getElementById('camera-input').click();
     } else {
-        const assignee = task.assignee;
-        const points = task.points;
-
-        task.completed = false;
-        delete task.photo;
-
-        appState.scores[assignee].daily = Math.max(0, appState.scores[assignee].daily - points);
-        appState.scores[assignee].weekly = Math.max(0, appState.scores[assignee].weekly - points);
-        appState.scores[assignee].monthly = Math.max(0, appState.scores[assignee].monthly - points);
-        appState.scores[assignee].yearly = Math.max(0, appState.scores[assignee].yearly - points);
-        appState.shopBudget[assignee] = Math.max(0, appState.shopBudget[assignee] - points);
-
+        task.status = STATUS_AWAITING;
+        task.note = '';
         saveToStorageAndFirebase();
         renderAllUI();
     }
@@ -270,7 +279,14 @@ document.getElementById('camera-input').addEventListener('change', function(e) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            finalizeTaskCompletion(pendingTaskIdForPhoto, canvas.toDataURL('image/jpeg', 0.6));
+            const task = appState.activeTasksList.find(t => t.id === pendingTaskIdForPhoto);
+            if (task) {
+                task.photo = canvas.toDataURL('image/jpeg', 0.6);
+                task.status = STATUS_AWAITING;
+                task.note = '';
+                saveToStorageAndFirebase();
+                renderAllUI();
+            }
             pendingTaskIdForPhoto = null;
         };
         img.src = event.target.result;
@@ -278,8 +294,9 @@ document.getElementById('camera-input').addEventListener('change', function(e) {
     reader.readAsDataURL(file);
 });
 
-function finalizeTaskCompletion(taskId, photoData) {
-    const task = appState.activeTasksList.find(t => t.id === taskId);
+// ZATWIERDZENIE PRZEZ RODZICA
+function parentApproveTask(id) {
+    const task = appState.activeTasksList.find(t => t.id === id);
     if (!task) return;
 
     const assignee = task.assignee;
@@ -292,8 +309,8 @@ function finalizeTaskCompletion(taskId, photoData) {
         document.getElementById('boost-banner').classList.remove('active');
     }
 
+    task.status = STATUS_COMPLETED;
     task.completed = true;
-    task.photo = photoData;
 
     appState.scores[assignee].daily += points;
     appState.scores[assignee].weekly += points;
@@ -306,28 +323,75 @@ function finalizeTaskCompletion(taskId, photoData) {
     try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); } catch(e){}
 }
 
+// ODRZUCENIE / ZWRÓCENIE DO POPRAWKI PRZEZ RODZICA
+function parentRejectTask(id) {
+    const task = appState.activeTasksList.find(t => t.id === id);
+    if (!task) return;
+
+    const reason = prompt("Wpisz, co dziecko musi poprawić:", "Niedokładnie wykonane");
+    if (reason === null) return;
+
+    task.status = STATUS_CORRECTION;
+    task.note = reason.trim() || "Wymaga poprawy!";
+
+    saveToStorageAndFirebase();
+    renderAllUI();
+}
+
 function renderTasksList() {
     const container = document.getElementById('tasks-list');
     container.innerHTML = '';
 
     appState.activeTasksList.forEach(task => {
-        if (task.assignee === currentFilter) {
+        if (currentFilter === 'Wszyscy' || task.assignee === currentFilter) {
             const card = document.createElement('div');
-            card.className = `task-card ${task.completed ? 'completed' : ''}`;
+            
+            let statusClass = `status-${task.status}`;
+            if (task.status === STATUS_COMPLETED) statusClass = 'status-completed';
+
+            card.className = `task-card ${statusClass}`;
+            
             const photoHtml = task.photo ? `<img src="${task.photo}" class="task-photo-thumb" onclick="window.viewPhoto('${task.photo}')" />` : '';
+            const photoReqBadge = task.requiresPhoto ? `<span title="Wymaga zdjęcia">📸</span> ` : '';
+
+            let actionButtons = '';
+            let noteHtml = '';
+
+            if (task.status === STATUS_PENDING || task.status === STATUS_CORRECTION) {
+                actionButtons = `
+                    <button class="btn-check" onclick="window.kidSubmitTask('${task.id}')">
+                        <i class="fa-solid fa-check"></i> Zalicz
+                    </button>
+                `;
+                if (task.status === STATUS_CORRECTION && task.note) {
+                    noteHtml = `<div class="status-note">⚠️ Poprawka: ${task.note}</div>`;
+                }
+            } else if (task.status === STATUS_AWAITING) {
+                if (isParentMode) {
+                    actionButtons = `
+                        <button class="btn-reject" onclick="window.parentRejectTask('${task.id}')">✏️ Do poprawki</button>
+                        <button class="btn-approve" onclick="window.parentApproveTask('${task.id}')">✓ Zatwierdź</button>
+                    `;
+                } else {
+                    actionButtons = `<span class="status-waiting-label">⏳ Czeka na rodzica</span>`;
+                }
+            } else if (task.status === STATUS_COMPLETED) {
+                actionButtons = `<span style="color: var(--accent-green); font-weight:700; font-size:0.85rem;">✓ Zaliczono</span>`;
+            }
 
             card.innerHTML = `
-                <div class="task-info">
-                    <div class="task-title">${task.title} <span class="points-badge">+${task.points} pkt</span></div>
-                    <div class="assignee-badge"><i class="fa-solid fa-user"></i> ${task.assignee}</div>
+                <div class="task-card-main">
+                    <div class="task-info">
+                        <div class="task-title">${photoReqBadge}${task.title} <span class="points-badge">+${task.points} pkt</span></div>
+                        <div class="assignee-badge"><i class="fa-solid fa-user"></i> ${task.assignee}</div>
+                    </div>
+                    <div class="task-actions">
+                        ${photoHtml}
+                        <button class="btn-delete" onclick="window.deleteTask('${task.id}')"><i class="fa-solid fa-trash"></i></button>
+                        ${actionButtons}
+                    </div>
                 </div>
-                <div class="task-actions">
-                    ${photoHtml}
-                    <button class="btn-delete" onclick="window.deleteTask('${task.id}')"><i class="fa-solid fa-trash"></i></button>
-                    <button class="btn-check ${task.completed ? 'done' : ''}" onclick="window.toggleTask('${task.id}')">
-                        <i class="fa-solid ${task.completed ? 'fa-check-double' : 'fa-check'}"></i>
-                    </button>
-                </div>
+                ${noteHtml}
             `;
             container.appendChild(card);
         }
@@ -339,14 +403,22 @@ function viewPhoto(photoUrl) {
     w.document.write(`<img src="${photoUrl}" style="max-width:100%; display:block; margin:20px auto; border-radius:12px;" />`);
 }
 
-function addQuestFromTile(title, points) {
-    appState.activeTasksList.push({
-        id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        title: title,
-        points: points,
-        assignee: currentFilter,
-        completed: false
+function addQuestFromTile(title, points, requiresPhoto) {
+    const kidsToAdd = (currentFilter === 'Wszyscy') ? ['Paweł', 'Madzia'] : [currentFilter];
+
+    kidsToAdd.forEach(kid => {
+        appState.activeTasksList.push({
+            id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            title: title,
+            points: points,
+            assignee: kid,
+            requiresPhoto: !!requiresPhoto,
+            status: STATUS_PENDING,
+            photo: null,
+            note: ''
+        });
     });
+
     saveToStorageAndFirebase();
     renderAllUI();
 }
@@ -368,10 +440,11 @@ function renderTiles() {
         wrapper.className = 'quest-tile-wrapper';
         wrapper.setAttribute('data-title', tile.title.toLowerCase());
         const safeTitle = tile.title.replace(/'/g, "\\'");
+        const photoIcon = tile.requiresPhoto ? "📸 " : "";
 
         wrapper.innerHTML = `
-            <button class="quest-tile" onclick="window.addQuestFromTile('${safeTitle}', ${tile.points})">
-                🎯 ${tile.title} (+${tile.points})
+            <button class="quest-tile" onclick="window.addQuestFromTile('${safeTitle}', ${tile.points}, ${tile.requiresPhoto})">
+                🎯 ${photoIcon}${tile.title} (+${tile.points})
             </button>
             <button class="btn-delete-tile" onclick="window.confirmRemoveTile(${tile.id})">
                 <i class="fa-solid fa-xmark"></i>
@@ -384,17 +457,26 @@ function renderTiles() {
 function createNewTile() {
     const titleInput = document.getElementById('new-tile-title');
     const pointsInput = document.getElementById('new-tile-points');
+    const photoInput = document.getElementById('new-tile-photo');
 
     const title = titleInput.value.trim();
     const points = parseInt(pointsInput.value) || 10;
+    const reqPhoto = photoInput.checked;
 
     if (!title) return alert("Wpisz nazwę Questu!");
 
-    appState.questTilesData.push({ id: Date.now(), title: title, points: points });
+    appState.questTilesData.push({
+        id: Date.now(),
+        title: title,
+        points: points,
+        requiresPhoto: reqPhoto
+    });
+
     saveToStorageAndFirebase();
     renderAllUI();
 
     titleInput.value = '';
+    photoInput.checked = false;
     document.getElementById('tile-search').value = '';
     filterTilesBySearch();
 }
@@ -485,8 +567,9 @@ function clickGoalIcon(name, target, current) {
 }
 
 function updateShopUI() {
-    const budget = appState.shopBudget[currentFilter] || 0;
-    document.getElementById('shop-budget-display').innerText = `Budżet (${currentFilter}): ${budget} pkt`;
+    const kidForShop = (currentFilter === 'Wszyscy') ? 'Paweł' : currentFilter;
+    const budget = appState.shopBudget[kidForShop] || 0;
+    document.getElementById('shop-budget-display').innerText = `Budżet (${kidForShop}): ${budget} pkt`;
 
     const container = document.getElementById('shop-items-container');
     container.innerHTML = '';
@@ -500,7 +583,7 @@ function updateShopUI() {
                 <div class="shop-item-info">${item.icon} ${item.name}</div>
                 <div class="shop-item-cost">Koszt: ${item.cost} pkt dziennych</div>
             </div>
-            <button class="btn-buy-coupon" ${canAfford ? '' : 'disabled'} onclick="window.buyCoupon('${item.name}', ${item.cost}, '${currentFilter}')">
+            <button class="btn-buy-coupon" ${canAfford ? '' : 'disabled'} onclick="window.buyCoupon('${item.name}', ${item.cost}, '${kidForShop}')">
                 Kup kupon
             </button>
         `;
@@ -521,7 +604,7 @@ function activateHappyHour() {
     if (!isParentMode) return;
     isHappyHourActive = true;
     document.getElementById('boost-banner').classList.add('active');
-    alert("✨ Aktywowano Happy Hour! PIERWSZY zrobiony Quest da x3 punktów!");
+    alert("✨ Aktywowano Happy Hour! PIERWSZY zatwierdzony Quest da x3 punktów!");
 }
 
 function filterTilesBySearch() {
@@ -589,7 +672,9 @@ window.confirmRemoveTile = confirmRemoveTile;
 window.createNewTile = createNewTile;
 window.addQuestFromTile = addQuestFromTile;
 window.deleteTask = deleteTask;
-window.toggleTask = toggleTask;
+window.kidSubmitTask = kidSubmitTask;
+window.parentApproveTask = parentApproveTask;
+window.parentRejectTask = parentRejectTask;
 window.openPinModal = openPinModal;
 window.closePinModal = closePinModal;
 window.submitPin = submitPin;
