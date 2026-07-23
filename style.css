@@ -1,6 +1,5 @@
-/* ==========================================================================
-   1. ZMIENNE GLOBALNE I STYLIZACJA PODSTAWOWA
-   ========================================================================== */
+/* Wersja: 0.3.0 */
+
 :root {
     --bg-color: #0f172a;
     --card-bg: #1e293b;
@@ -29,9 +28,6 @@ body {
     margin: 0 auto;
 }
 
-/* ==========================================================================
-   2. NAGŁÓWEK I PRZYCISKI
-   ========================================================================== */
 header {
     display: flex;
     justify-content: space-between;
@@ -47,10 +43,7 @@ header h1 {
     -webkit-text-fill-color: transparent;
 }
 
-.header-actions {
-    display: flex;
-    gap: 8px;
-}
+.header-actions { display: flex; gap: 8px; }
 
 .btn-header {
     background: rgba(255, 255, 255, 0.05);
@@ -79,17 +72,9 @@ header h1 {
     color: #fff;
 }
 
-#btn-tile-delete-toggle {
-    display: none;
-}
+#btn-tile-delete-toggle { display: none; }
+body.parent-mode #btn-tile-delete-toggle { display: inline-block; }
 
-body.parent-mode #btn-tile-delete-toggle {
-    display: inline-block;
-}
-
-/* ==========================================================================
-   3. BANNER HAPPY HOUR
-   ========================================================================== */
 .boost-banner {
     display: none;
     background: linear-gradient(90deg, #a855f7, #f59e0b);
@@ -103,13 +88,8 @@ body.parent-mode #btn-tile-delete-toggle {
     box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
 }
 
-.boost-banner.active {
-    display: block;
-}
+.boost-banner.active { display: block; }
 
-/* ==========================================================================
-   4. FILTRY DZIECI (GWARANTOWANE UKRYCIE "WSZYSCY" W CSS)
-   ========================================================================== */
 .children-selector {
     display: flex;
     gap: 10px;
@@ -138,24 +118,11 @@ body.parent-mode #btn-tile-delete-toggle {
     font-weight: 700;
 }
 
-/* PRZYCISK "WSZYSCY" JEST DOMYŚLNIE 100% UKRYTY DLA DZIECI */
-#chip-all {
-    display: none !important;
-}
+/* Przycisk Wszyscy bezwzględnie ukryty dla dzieci */
+#chip-all { display: none !important; }
+body.parent-mode #chip-all { display: block !important; }
 
-/* POKAZUJE SIĘ TYLKO WTEDY, GDY BODY MA KLASĘ parent-mode */
-body.parent-mode #chip-all {
-    display: block !important;
-}
-
-/* ==========================================================================
-   5. LISTA QUESTÓW
-   ========================================================================== */
-.task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
+.task-list { display: flex; flex-direction: column; gap: 12px; }
 
 .task-card {
     background: var(--card-bg);
@@ -167,26 +134,11 @@ body.parent-mode #chip-all {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.task-card.completed {
-    opacity: 0.5;
-    background: #111827;
-}
+.task-card.completed { opacity: 0.6; background: #111827; }
+.task-card.completed .task-title { text-decoration: line-through; color: var(--text-sub); }
 
-.task-card.completed .task-title {
-    text-decoration: line-through;
-    color: var(--text-sub);
-}
-
-.task-info {
-    flex: 1;
-    padding-right: 10px;
-}
-
-.task-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
+.task-info { flex: 1; padding-right: 10px; }
+.task-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
 
 .points-badge {
     background: rgba(245, 158, 11, 0.15);
@@ -198,18 +150,20 @@ body.parent-mode #chip-all {
     font-weight: 700;
 }
 
-.assignee-badge {
-    display: inline-block;
-    font-size: 0.8rem;
-    color: var(--text-sub);
-    margin-top: 4px;
+.assignee-badge { display: inline-block; font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; }
+
+/* Podgląd wykonanego zdjęcia przy zadaniu */
+.task-photo-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid var(--accent-green);
+    margin-right: 8px;
+    cursor: pointer;
 }
 
-.task-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+.task-actions { display: flex; align-items: center; gap: 6px; }
 
 .btn-check {
     background: rgba(34, 197, 94, 0.15);
@@ -225,10 +179,7 @@ body.parent-mode #chip-all {
     justify-content: center;
 }
 
-.btn-check.done {
-    background: var(--accent-green);
-    color: #000;
-}
+.btn-check.done { background: var(--accent-green); color: #000; }
 
 .btn-delete {
     background: rgba(239, 68, 68, 0.15);
@@ -244,13 +195,8 @@ body.parent-mode #chip-all {
     justify-content: center;
 }
 
-body.parent-mode .btn-delete {
-    display: flex;
-}
+body.parent-mode .btn-delete { display: flex; }
 
-/* ==========================================================================
-   6. DOLNY PANEL KAFELKÓW
-   ========================================================================== */
 .bottom-panel {
     position: fixed;
     bottom: 15px;
@@ -265,10 +211,7 @@ body.parent-mode .btn-delete {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.search-box {
-    position: relative;
-    margin-bottom: 8px;
-}
+.search-box { position: relative; margin-bottom: 8px; }
 
 .search-box input {
     width: 100%;
@@ -289,12 +232,7 @@ body.parent-mode .btn-delete {
     font-size: 0.8rem;
 }
 
-.quest-tiles {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-}
+.quest-tiles { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
 
 .quest-tile-wrapper {
     display: flex;
@@ -330,11 +268,8 @@ body.parent-mode .btn-delete {
     font-size: 0.8rem;
 }
 
-body.tile-delete-mode .btn-delete-tile {
-    display: inline-block;
-}
+body.tile-delete-mode .btn-delete-tile { display: inline-block; }
 
-/* FORMULARZ RODZICA */
 .parent-form {
     display: none;
     flex-direction: column;
@@ -344,9 +279,7 @@ body.tile-delete-mode .btn-delete-tile {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-body.parent-mode .parent-form {
-    display: flex;
-}
+body.parent-mode .parent-form { display: flex; }
 
 .parent-form-header {
     display: flex;
@@ -355,16 +288,8 @@ body.parent-mode .parent-form {
     margin-bottom: 4px;
 }
 
-.parent-form-title {
-    font-size: 0.8rem;
-    color: var(--accent-purple);
-    font-weight: 700;
-}
-
-.parent-inputs {
-    display: flex;
-    gap: 8px;
-}
+.parent-form-title { font-size: 0.8rem; color: var(--accent-purple); font-weight: 700; }
+.parent-inputs { display: flex; gap: 8px; }
 
 .parent-form input {
     background: #0f172a;
@@ -399,9 +324,6 @@ body.parent-mode .parent-form {
     cursor: pointer;
 }
 
-/* ==========================================================================
-   7. OKNO MODALNE (FIOLKI I SKLEPIK DZIENNY)
-   ========================================================================== */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -417,9 +339,7 @@ body.parent-mode .parent-form {
     padding: 15px;
 }
 
-.modal-overlay.open {
-    display: flex;
-}
+.modal-overlay.open { display: flex; }
 
 .magical-theme {
     background: radial-gradient(circle at top, #1e1b4b, #0f172a 80%) !important;
@@ -436,17 +356,8 @@ body.parent-mode .parent-form {
     padding: 20px 15px;
 }
 
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.modal-header h2 {
-    font-size: 1.1rem;
-    color: var(--accent-amber);
-}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.modal-header h2 { font-size: 1.1rem; color: var(--accent-amber); }
 
 .btn-close-modal {
     background: rgba(255, 255, 255, 0.1);
@@ -479,31 +390,11 @@ body.parent-mode .parent-form {
     cursor: pointer;
 }
 
-.period-tab.active {
-    background: var(--accent-purple);
-    color: #fff;
-}
+.period-tab.active { background: var(--accent-purple); color: #fff; }
 
-.vials-container {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.vial-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.vial-title {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-sub);
-    margin-bottom: 2px;
-}
+.vials-container { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+.vial-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.vial-title { font-size: 0.8rem; font-weight: 700; color: var(--text-sub); margin-bottom: 2px; }
 
 .vial-title.clickable {
     cursor: pointer;
@@ -511,22 +402,10 @@ body.parent-mode .parent-form {
     padding: 2px 6px;
     border-radius: 8px;
     border: 1px dashed rgba(255, 255, 255, 0.2);
-    transition: all 0.2s ease;
 }
 
-.vial-title.clickable.selected {
-    background: var(--accent-blue);
-    color: #000;
-    border-style: solid;
-    font-weight: 800;
-}
-
-.vial-pts {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: var(--accent-amber);
-    margin-bottom: 8px;
-}
+.vial-title.clickable.selected { background: var(--accent-blue); color: #000; border-style: solid; font-weight: 800; }
+.vial-pts { font-size: 0.95rem; font-weight: 800; color: var(--accent-amber); margin-bottom: 8px; }
 
 .vial-glass {
     position: relative;
@@ -539,9 +418,7 @@ body.parent-mode .parent-form {
     box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
 }
 
-.vial-shared .vial-glass {
-    border-color: var(--accent-purple);
-}
+.vial-shared .vial-glass { border-color: var(--accent-purple); }
 
 .vial-liquid {
     position: absolute;
@@ -556,14 +433,7 @@ body.parent-mode .parent-form {
 .liquid-madzia { background: linear-gradient(to top, #ec4899, #f472b6); }
 .liquid-shared { background: linear-gradient(to top, #7c3aed, #f59e0b); }
 
-.vial-marks {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
+.vial-marks { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
 .mark-item {
     position: absolute;
@@ -595,29 +465,10 @@ body.parent-mode .parent-form {
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.shop-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--accent-blue);
-    margin-bottom: 10px;
-}
+.shop-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 10px; }
+.shop-budget { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); padding: 3px 8px; border-radius: 8px; font-size: 0.75rem; }
 
-.shop-budget {
-    background: rgba(34, 197, 94, 0.15);
-    color: var(--accent-green);
-    padding: 3px 8px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-}
-
-.shop-items {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
+.shop-items { display: flex; flex-direction: column; gap: 8px; }
 
 .shop-item {
     background: var(--card-bg);
@@ -643,11 +494,7 @@ body.parent-mode .parent-form {
     cursor: pointer;
 }
 
-.btn-buy-coupon:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    background: var(--text-sub);
-}
+.btn-buy-coupon:disabled { opacity: 0.3; cursor: not-allowed; background: var(--text-sub); }
 
 .parent-goals-manager {
     display: none;
@@ -657,21 +504,9 @@ body.parent-mode .parent-form {
     border: 1px solid rgba(255,255,255,0.05);
 }
 
-body.parent-mode .parent-goals-manager {
-    display: block;
-}
-
-.manager-title {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--accent-purple);
-    margin-bottom: 6px;
-}
-
-.manager-actions {
-    display: flex;
-    gap: 6px;
-}
+body.parent-mode .parent-goals-manager { display: block; }
+.manager-title { font-size: 0.8rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 6px; }
+.manager-actions { display: flex; gap: 6px; }
 
 .btn-add-goal {
     flex: 1;
@@ -685,7 +520,4 @@ body.parent-mode .parent-goals-manager {
     cursor: pointer;
 }
 
-.btn-add-goal.btn-coupon {
-    background: var(--accent-blue);
-    color: #000;
-}
+.btn-add-goal.btn-coupon { background: var(--accent-blue); color: #000; }
