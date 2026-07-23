@@ -1,11 +1,10 @@
 // ==========================================================================
-// 1. STANY GŁÓWNE I REJESTR DZIECI
+// 1. DANE, STAN APKLIKACJI I LOCAL STORAGE (TRWAŁA PAMIĘĆ)
 // ==========================================================================
 
-// Lista zarejestrowanych dzieci w systemie
 const allKids = ["Paweł", "Madzia"];
 
-let currentFilter = 'Paweł'; // Domyślny filtr startowy
+let currentFilter = 'Paweł';
 let currentPeriod = 'daily';
 let isParentMode = false;
 let isTileDeleteMode = false;
@@ -13,27 +12,21 @@ const PARENT_PIN = "1234";
 
 let isHappyHourActive = false;
 
-// Punktacje fiolek
-let scores = {
+// Domyślna punktacja
+let defaultScores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-// Dzienny budżet na kupony
-let shopBudget = {
-    Paweł: 0,
-    Madzia: 0
-};
+let defaultShopBudget = { Paweł: 0, Madzia: 0 };
 
-// Baza dziennych kuponów
-let shopItems = [
+let defaultShopItems = [
     { id: 1, icon: "📱", name: "+1h Family Link / Konsola", cost: 20 },
     { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 },
     { id: 3, icon: "🍦", name: "Dodatkowa przekąska / słodycz", cost: 15 }
 ];
 
-// Cele długoterminowe przypisane do Fiolek
-let goalsData = {
+let defaultGoalsData = {
     Paweł: [
         { id: 1, icon: "🍦", name: "Lody", target: 30 },
         { id: 2, icon: "🎮", name: "Gra na konsole", target: 100 }
@@ -47,8 +40,7 @@ let goalsData = {
     ]
 };
 
-// Baza kafelków z nazwami questów
-let questTilesData = [
+let defaultQuestTiles = [
     { id: 1, title: "Ścielenie łóżka", points: 5 },
     { id: 2, title: "Zrobienie lekcji", points: 15 },
     { id: 3, title: "Wyniesienie śmieci", points: 5 },
@@ -56,9 +48,44 @@ let questTilesData = [
     { id: 5, title: "Podlewanie kwiatów", points: 5 }
 ];
 
+// Inicjalizacja stałych ładowanych z LocalStorage
+let activeTasksList = [];
+let scores = defaultScores;
+let shopBudget = defaultShopBudget;
+let shopItems = defaultShopItems;
+let goalsData = defaultGoalsData;
+let questTilesData = defaultQuestTiles;
+
+// Funkcja zapisująca CAŁY stan do pamięci podręcznej przeglądarki
+function saveToStorage() {
+    localStorage.setItem('kiddodo_tasks', JSON.stringify(activeTasksList));
+    localStorage.setItem('kiddodo_scores', JSON.stringify(scores));
+    localStorage.setItem('kiddodo_shop_budget', JSON.stringify(shopBudget));
+    localStorage.setItem('kiddodo_shop_items', JSON.stringify(shopItems));
+    localStorage.setItem('kiddodo_goals', JSON.stringify(goalsData));
+    localStorage.setItem('kiddodo_tiles', JSON.stringify(questTilesData));
+}
+
+// Funkcja wczytująca dane z pamięci po odświeżeniu
+function loadFromStorage() {
+    const savedTasks = localStorage.getItem('kiddodo_tasks');
+    const savedScores = localStorage.getItem('kiddodo_scores');
+    const savedBudget = localStorage.getItem('kiddodo_shop_budget');
+    const savedItems = localStorage.getItem('kiddodo_shop_items');
+    const savedGoals = localStorage.getItem('kiddodo_goals');
+    const savedTiles = localStorage.getItem('kiddodo_tiles');
+
+    if (savedTasks) activeTasksList = JSON.parse(savedTasks);
+    if (savedScores) scores = JSON.parse(savedScores);
+    if (savedBudget) shopBudget = JSON.parse(savedBudget);
+    if (savedItems) shopItems = JSON.parse(savedItems);
+    if (savedGoals) goalsData = JSON.parse(savedGoals);
+    if (savedTiles) questTilesData = JSON.parse(savedTiles);
+}
+
 
 // ==========================================================================
-// 2. OBSŁUGA OKNA MODALNEGO (RANKING & SKLEPIK)
+// 2. OKNO MODALNE (FIOLEKI I SKLEPIK DZIENNY)
 // ==========================================================================
 
 function openRankingModal() {
@@ -89,7 +116,7 @@ function switchPeriod(period, tabBtn) {
 
 
 // ==========================================================================
-// 3. LOGIKA VIALS (FIOLEK Z MIKSTURĄ)
+// 3. FIOLEKI PŁYNU I RENDEROWANIE WSKAŹNIKÓW
 // ==========================================================================
 
 function updateVials() {
@@ -148,7 +175,7 @@ function clickGoalIcon(name, target, current) {
 
 
 // ==========================================================================
-// 4. DZIENNY SKLEPIK NAGRÓD
+// 4. LOGIKA SKLEPIKU DZIENNEGO
 // ==========================================================================
 
 function updateShopUI() {
@@ -181,6 +208,7 @@ function buyCoupon(itemName, cost, kidName) {
     if (shopBudget[kidName] < cost) return alert("Brak wystarczającej ilości dziennych punktów!");
 
     shopBudget[kidName] -= cost;
+    saveToStorage();
     triggerConfetti();
     alert(`🎟️ GRATULACJE! ${kidName} kupuje kupon: "${itemName}"!\nPokaż ten komunikat rodzicowi!`);
     
@@ -189,7 +217,7 @@ function buyCoupon(itemName, cost, kidName) {
 
 
 // ==========================================================================
-// 5. OBSŁUGA ZADAŃ (QUESTÓW) I HAPPY HOUR
+// 5. DZIAŁANIE ZADAŃ (QUESTÓW) I KAFELKÓW
 // ==========================================================================
 
 function activateHappyHour() {
@@ -201,50 +229,44 @@ function activateHappyHour() {
     alert("✨ Aktywowano Magiczne Happy Hour! PIERWSZY zrobiony Quest da x3 punktów!");
 }
 
-function toggleTask(btn) {
-    const card = btn.closest('.task-card');
-    const assignee = card.getAttribute('data-assignee');
-    let points = parseInt(card.getAttribute('data-points')) || 0;
-    const badge = card.querySelector('.points-badge');
+function toggleTask(id) {
+    const taskIndex = activeTasksList.findIndex(t => t.id === id);
+    if (taskIndex === -1) return;
 
-    // Mnożnik Happy Hour x3 dla pierwszego wykonanego questa
-    if (isHappyHourActive && !card.classList.contains('completed')) {
+    const task = activeTasksList[taskIndex];
+    const assignee = task.assignee;
+    let points = task.points;
+
+    // Obsługa Happy Hour
+    if (isHappyHourActive && !task.completed) {
         points = points * 3;
+        task.points = points;
         isHappyHourActive = false;
         document.getElementById('boost-banner').classList.remove('active');
-        
-        card.setAttribute('data-points', points);
-        if (badge) badge.innerText = `+${points} pkt (x3!)`;
-        
         alert("🎉 Zrobiono Quest w trakcie Happy Hour! Punkty pomnożone x3!");
     }
 
-    card.classList.toggle('completed');
+    task.completed = !task.completed;
 
-    if (card.classList.contains('completed')) {
-        btn.classList.add('done');
-        btn.innerHTML = '<i class="fa-solid fa-check-double"></i>';
-
+    if (task.completed) {
         scores[assignee].daily += points;
         scores[assignee].weekly += points;
         scores[assignee].monthly += points;
         scores[assignee].yearly += points;
 
         shopBudget[assignee] += points;
-
         triggerConfetti();
     } else {
-        btn.classList.remove('done');
-        btn.innerHTML = '<i class="fa-solid fa-check"></i>';
-
-        scores[assignee].daily -= points;
-        scores[assignee].weekly -= points;
-        scores[assignee].monthly -= points;
-        scores[assignee].yearly -= points;
+        scores[assignee].daily = Math.max(0, scores[assignee].daily - points);
+        scores[assignee].weekly = Math.max(0, scores[assignee].weekly - points);
+        scores[assignee].monthly = Math.max(0, scores[assignee].monthly - points);
+        scores[assignee].yearly = Math.max(0, scores[assignee].yearly - points);
 
         shopBudget[assignee] = Math.max(0, shopBudget[assignee] - points);
     }
 
+    saveToStorage();
+    renderTasksList();
     updateVials();
     updateShopUI();
 }
@@ -254,18 +276,35 @@ function filterTasks(assignee, chipBtn) {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     if (chipBtn) chipBtn.classList.add('active');
 
-    const cards = document.querySelectorAll('.task-card');
-    cards.forEach(card => {
-        const cardAssignee = card.getAttribute('data-assignee');
-        if (assignee === 'all' || cardAssignee === assignee) {
-            card.style.display = 'flex';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
+    renderTasksList();
     updateVials();
     updateShopUI();
+}
+
+function renderTasksList() {
+    const container = document.getElementById('tasks-list');
+    container.innerHTML = '';
+
+    activeTasksList.forEach(task => {
+        if (currentFilter === 'all' || task.assignee === currentFilter) {
+            const card = document.createElement('div');
+            card.className = `task-card ${task.completed ? 'completed' : ''}`;
+            
+            card.innerHTML = `
+                <div class="task-info">
+                    <div class="task-title">${task.title} <span class="points-badge">+${task.points} pkt</span></div>
+                    <div class="assignee-badge"><i class="fa-solid fa-user"></i> ${task.assignee}</div>
+                </div>
+                <div class="task-actions">
+                    <button class="btn-delete" onclick="deleteTask(${task.id})"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-check ${task.completed ? 'done' : ''}" onclick="toggleTask(${task.id})">
+                        <i class="fa-solid ${task.completed ? 'fa-check-double' : 'fa-check'}"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    });
 }
 
 function renderTiles() {
@@ -309,6 +348,7 @@ function confirmRemoveTile(id, title) {
     const pin = prompt(`Aby usunąć kafelek:\n"${title}"\npodaj PIN rodzica:`);
     if (pin === PARENT_PIN) {
         questTilesData = questTilesData.filter(t => t.id !== id);
+        saveToStorage();
         renderTiles();
     } else if (pin !== null) {
         alert("Błędny PIN!");
@@ -339,6 +379,7 @@ function createNewTile() {
     if (!title) return alert("Wpisz nazwę Questu!");
 
     questTilesData.push({ id: Date.now(), title: title, points: points });
+    saveToStorage();
     renderTiles();
 
     titleInput.value = '';
@@ -346,56 +387,53 @@ function createNewTile() {
     filterTilesBySearch();
 }
 
-// DODAJE QUEST DLA KAŻDEGO DZIECKA (GDY RODZIC JEST NA ZAKŁADCE "WSZYSCY")
+// TWORZENIE ZADAŃ DLA DZIECI LUB DLA WSZYSTKICH NA RAZ
 function addQuestFromTile(title, points) {
     if (currentFilter === 'all') {
-        // Pętla przechodzi przez całą tablicę allKids i tworzy osobną kartę dla Pawła i dla Madzi
+        // Gdy wybrano zakładkę "Wszyscy" w Trybie Rodzica -> generuje quest po 1 sztuce dla każdego dziecka
         allKids.forEach(kid => {
-            createQuestCard(title, points, kid);
+            activeTasksList.push({
+                id: Date.now() + Math.random(),
+                title: title,
+                points: points,
+                assignee: kid,
+                completed: false
+            });
         });
     } else {
-        createQuestCard(title, points, currentFilter);
+        activeTasksList.push({
+            id: Date.now(),
+            title: title,
+            points: points,
+            assignee: currentFilter,
+            completed: false
+        });
     }
+
+    saveToStorage();
+    renderTasksList();
 }
 
-function createQuestCard(title, points, assignee) {
-    const list = document.getElementById('tasks-list');
-    const newTask = document.createElement('div');
-
-    newTask.className = 'task-card';
-    newTask.setAttribute('data-assignee', assignee);
-    newTask.setAttribute('data-points', points);
-
-    newTask.innerHTML = `
-        <div class="task-info">
-            <div class="task-title">${title} <span class="points-badge">+${points} pkt</span></div>
-            <div class="assignee-badge"><i class="fa-solid fa-user"></i> ${assignee}</div>
-        </div>
-        <div class="task-actions">
-            <button class="btn-delete" onclick="deleteTask(this)"><i class="fa-solid fa-trash"></i></button>
-            <button class="btn-check" onclick="toggleTask(this)"><i class="fa-solid fa-check"></i></button>
-        </div>
-    `;
-
-    list.appendChild(newTask);
-
-    if (currentFilter !== 'all' && currentFilter !== assignee) {
-        newTask.style.display = 'none';
-    } else {
-        newTask.style.display = 'flex';
-    }
+function deleteTask(id) {
+    activeTasksList = activeTasksList.filter(t => t.id !== id);
+    saveToStorage();
+    renderTasksList();
 }
 
 
 // ==========================================================================
-// 6. LOGIKA TRYBU RODZICA (ZARZĄDZANIE WIDOCZNOŚCIĄ #chip-all)
+// 6. OBSŁUGA TRYBU RODZICA I PRZYCISKU "WSZYSCY"
 // ==========================================================================
 
 function updateParentUI() {
     const chipAll = document.getElementById('chip-all');
     if (chipAll) {
-        // Bezpośrednia zmiana stylu w kodzie JS (omija problemy z cachem CSS w Safari)
-        chipAll.style.display = isParentMode ? 'block' : 'none';
+        // Wymuszone ukrycie/pokazanie JS bezpośrednio na elemencie w DOM
+        if (isParentMode) {
+            chipAll.style.setProperty('display', 'block', 'important');
+        } else {
+            chipAll.style.setProperty('display', 'none', 'important');
+        }
     }
 }
 
@@ -422,7 +460,7 @@ function toggleParentMode() {
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
 
-        // Gdy wychodzimy z trybu rodzica i aktywny był filtr "Wszyscy", przełączamy na Pawła
+        // Gdy rodzic wyłącza swój tryb, filtr od razu bezpiecznie wraca na Pawła
         if (currentFilter === 'all') {
             const chipPawel = document.getElementById('chip-pawel');
             filterTasks('Paweł', chipPawel);
@@ -432,11 +470,6 @@ function toggleParentMode() {
     updateParentUI();
     updateVials();
     updateShopUI();
-}
-
-function deleteTask(btn) {
-    const card = btn.closest('.task-card');
-    card.remove();
 }
 
 function addNewGoalPrompt() {
@@ -454,6 +487,7 @@ function addNewGoalPrompt() {
     const key = owner === 'Rodzina' ? 'Shared' : owner;
     goalsData[key].push({ id: Date.now(), icon: icon || "🎁", name: name, target: target });
 
+    saveToStorage();
     updateVials();
     alert("Dodano nowy cel do fiolki!");
 }
@@ -468,16 +502,19 @@ function addNewShopItemPrompt() {
     if (!name || !cost) return alert("Wypełnij wszystkie dane!");
 
     shopItems.push({ id: Date.now(), icon: icon || "🎟️", name: name, cost: cost });
+    saveToStorage();
     updateShopUI();
     alert("Dodano nowy kupon do Sklepiku!");
 }
 
 
 // ==========================================================================
-// 7. INITIALIZACJA APPIKACJI ON START
+// 7. INICJALIZACJA SYSTEMU ON START
 // ==========================================================================
+
+loadFromStorage();
+updateParentUI();
 
 const chipPawel = document.getElementById('chip-pawel');
 filterTasks('Paweł', chipPawel);
-updateParentUI();
 renderTiles();
