@@ -1,128 +1,141 @@
-<!-- Wersja: 0.7.0 -->
+<!-- Wersja: 1.0.0 -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Połączenia z Firebase</title>
-    <style>
-        body { font-family: sans-serif; background: #0f172a; color: #fff; padding: 20px; max-width: 500px; margin: 0 auto; }
-        .box { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        button { background: #38bdf8; color: #000; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 15px; width: 100%; margin-bottom: 10px; }
-        .btn-clear { background: #ef4444; color: #fff; }
-        #debug-log { background: #000; color: #32cd32; padding: 10px; font-family: monospace; font-size: 11px; height: 160px; overflow-y: auto; border-radius: 6px; border: 1px solid #333; line-height: 1.4; }
-        .tile { background: rgba(56, 189, 248, 0.15); padding: 10px; margin-bottom: 6px; border-radius: 8px; border: 1px solid #38bdf8; font-weight: bold; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KiddoDo - Questy i Nagrody</title>
+
+    <!-- FontAwesome & Confetti -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Arkusz Stylów z wymuszeniem odświeżenia cache -->
+    <link rel="stylesheet" href="style.css?v=100">
 </head>
 <body>
 
-    <h2>Test Bazy Firebase 📡</h2>
-
-    <div class="box">
-        <button id="btn-add">➕ Dodaj testowy kafelek</button>
-        <button id="btn-clear" class="btn-clear">🗑️ Wyczyść bazę</button>
+    <!-- BANNER HAPPY HOUR -->
+    <div id="boost-banner" class="boost-banner">
+        <span>🔥 HAPPY HOUR AKTYWNE! Nastepny Quest daje x3 PKT! 🔥</span>
     </div>
 
-    <div class="box">
-        <h3>Kafelki z bazy danych:</h3>
-        <div id="tiles-container">Ładowanie danych...</div>
+    <!-- NAGŁÓWEK -->
+    <header>
+        <div class="logo">
+            <h1>KiddoDo 🎯</h1>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn trophy-btn" onclick="window.openRankingModal()" title="Puchar i Fiolki">
+                <i class="fa-solid fa-trophy"></i>
+            </button>
+            <button class="icon-btn lock-btn" id="parent-lock" onclick="window.openPinModal()" title="Tryb Rodzica">
+                <i class="fa-solid fa-lock" id="lock-icon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- PRZEŁĄCZNIK DZIECI (TYLKO PAWEŁ I MADZIA) -->
+    <div class="children-selector">
+        <button class="chip active" id="chip-pawel" onclick="window.filterTasks('Paweł', this)">Paweł</button>
+        <button class="chip" id="chip-madzia" onclick="window.filterTasks('Madzia', this)">Madzia</button>
     </div>
 
-    <div class="box">
-        <h3>Logi połączenia (na żywo):</h3>
-        <div id="debug-log">Inicjalizacja skryptu...<br></div>
+    <!-- LISTA AKTYWNYCH ZADAŃ -->
+    <main class="task-list" id="tasks-list"></main>
+
+    <!-- UKRYTY INPUT APARATU -->
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+
+    <!-- PANEL PANELU RODZICA (Gdy odblokowane) -->
+    <div class="parent-controls" id="parent-controls">
+        <button class="btn-happy-hour" onclick="window.activateHappyHour()">⚡ Włącz Happy Hour (x3 PKT)</button>
+        <button class="btn-add-goal" onclick="window.addNewGoalPrompt()">🏆 Dodaj Nowy Cel</button>
+        <button class="btn-add-shop" onclick="window.addNewShopItemPrompt()">🛍️ Dodaj Nagrodę do Sklepu</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    <!-- DOLNY PANEL KAFELKÓW -->
+    <div class="bottom-panel">
+        <div class="panel-header">
+            <span class="panel-title">Wybierz Quest:</span>
+            <input type="text" id="tile-search" placeholder="Szukaj..." oninput="window.filterTilesBySearch()">
+            <button class="btn-toggle-delete" id="btn-tile-delete-toggle" onclick="window.toggleTileDeleteMode()" title="Usuwaj kafelki">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </div>
 
-        function log(msg) {
-            const logger = document.getElementById('debug-log');
-            const time = new Date().toLocaleTimeString();
-            logger.innerHTML += `[${time}] ${msg}<br>`;
-            logger.scrollTop = logger.scrollHeight;
-        }
+        <div class="quest-tiles" id="tiles-container"></div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAlF_XfCacX98_6NYhkrQ0dI5AC1ykKojU",
-            authDomain: "kiddodo-32c0e.firebaseapp.com",
-            projectId: "kiddodo-32c0e",
-            storageBucket: "kiddodo-32c0e.firebasestorage.app",
-            messagingSenderId: "655398128952",
-            appId: "1:655398128952:web:39b190b5ff4b7ef6ff85cd"
-        };
+        <div class="tile-creator" id="tile-creator">
+            <input type="text" id="new-tile-title" placeholder="Nazwa nowego Questu...">
+            <input type="number" id="new-tile-points" placeholder="Pkt" value="10">
+            <button onclick="window.createNewTile()">➕ Stwórz Kafelek</button>
+        </div>
+    </div>
 
-        let db, docRef;
-        let localTiles = [];
+    <!-- MODAL RANKINGU I FIOLEK -->
+    <div class="modal-overlay" id="ranking-modal">
+        <div class="modal-content ranking-modal-content">
+            <button class="modal-close" onclick="window.closeRankingModal()">&times;</button>
+            <h2>🏆 Postępy i Cele</h2>
 
-        try {
-            log("Łączenie z Firebase...");
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            docRef = doc(db, "kiddodo", "appState");
-            log("Inicjalizacja udana.");
-        } catch (err) {
-            log("❌ BŁĄD INICJALIZACJI: " + err.message);
-        }
+            <div class="period-tabs">
+                <button class="period-tab active" onclick="window.switchPeriod('daily', this)">Dzienny</button>
+                <button class="period-tab" onclick="window.switchPeriod('weekly', this)">Tygodniowy</button>
+                <button class="period-tab" onclick="window.switchPeriod('monthly', this)">Miesięczny</button>
+                <button class="period-tab" onclick="window.switchPeriod('yearly', this)">Roczny</button>
+            </div>
 
-        if (docRef) {
-            log("Uruchamiam nasłuchiwanie chmury...");
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    localTiles = data.testTiles || [];
-                    log(`Pobrano dane! Liczba kafelków: ${localTiles.length}`);
-                    render();
-                } else {
-                    log("Brak dokumentu w bazie. Tworzę nowy...");
-                    localTiles = [];
-                    save();
-                }
-            }, (err) => {
-                log("❌ BŁĄD ODCZYTU Z BAZY: " + err.message);
-            });
-        }
+            <div class="vials-container">
+                <div class="vial-wrapper" onclick="window.selectKidInModal('Paweł')">
+                    <div class="vial-title" id="vial-title-pawel">Paweł</div>
+                    <div class="vial-pts" id="pts-vial-pawel">0 pkt</div>
+                    <div class="vial">
+                        <div class="vial-liquid" id="liquid-pawel"></div>
+                        <div class="vial-marks" id="marks-pawel"></div>
+                    </div>
+                </div>
 
-        async function save() {
-            log("Zapisywanie danych do Firebase...");
-            try {
-                await setDoc(docRef, { testTiles: localTiles });
-                log("✅ ZAPISANO W CHMURZE!");
-            } catch (err) {
-                log("❌ BŁĄD ZAPISU: " + err.message);
-            }
-        }
+                <div class="vial-wrapper" onclick="window.selectKidInModal('Madzia')">
+                    <div class="vial-title" id="vial-title-madzia">Madzia</div>
+                    <div class="vial-pts" id="pts-vial-madzia">0 pkt</div>
+                    <div class="vial">
+                        <div class="vial-liquid" id="liquid-madzia"></div>
+                        <div class="vial-marks" id="marks-madzia"></div>
+                    </div>
+                </div>
 
-        function render() {
-            const container = document.getElementById('tiles-container');
-            container.innerHTML = '';
-            
-            if (localTiles.length === 0) {
-                container.innerHTML = '<span style="color:#888;">Brak kafelków. Kliknij niebieski przycisk powyżej!</span>';
-                return;
-            }
+                <div class="vial-wrapper">
+                    <div class="vial-title">Rodzina</div>
+                    <div class="vial-pts" id="pts-vial-shared">0 pkt</div>
+                    <div class="vial shared-vial">
+                        <div class="vial-liquid" id="liquid-shared"></div>
+                        <div class="vial-marks" id="marks-shared"></div>
+                    </div>
+                </div>
+            </div>
 
-            localTiles.forEach(tile => {
-                const div = document.createElement('div');
-                div.className = 'tile';
-                div.innerText = "🎯 " + tile.title;
-                container.appendChild(div);
-            });
-        }
+            <!-- SKLEPIK DZIENNY -->
+            <hr class="modal-divider">
+            <div class="shop-section">
+                <h3>🛍️ Sklepik z Nagrodami</h3>
+                <div class="shop-budget-title" id="shop-budget-display">Budżet: 0 pkt</div>
+                <div class="shop-items-grid" id="shop-items-container"></div>
+            </div>
+        </div>
+    </div>
 
-        document.getElementById('btn-add').addEventListener('click', () => {
-            const id = Date.now();
-            log(`Dodaję kafelek o ID: ${id}`);
-            localTiles.push({ id: id, title: "Kafelek " + Math.floor(Math.random() * 100) });
-            save();
-        });
+    <!-- MODAL PIN -->
+    <div class="modal-overlay" id="pin-modal">
+        <div class="modal-content pin-modal-content">
+            <button class="modal-close" onclick="window.closePinModal()">&times;</button>
+            <h3>🔑 Podaj PIN Rodzica</h3>
+            <input type="password" id="pin-input" maxlength="4" placeholder="****">
+            <button class="btn-submit-pin" onclick="window.submitPin()">Zatwierdź</button>
+        </div>
+    </div>
 
-        document.getElementById('btn-clear').addEventListener('click', () => {
-            log("Czyszczę kafelki...");
-            localTiles = [];
-            save();
-        });
-    </script>
+    <!-- Skrypt Aplikacji z wymuszeniem odświeżenia cache -->
+    <script type="module" src="app.js?v=100"></script>
 </body>
 </html>
