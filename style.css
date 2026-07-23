@@ -1,4 +1,4 @@
-/* Wersja: 1.0.0 */
+/* Wersja: 1.1.0 */
 
 :root {
     --bg-color: #0f172a;
@@ -7,6 +7,7 @@
     --accent-green: #22c55e;
     --accent-red: #ef4444;
     --accent-amber: #f59e0b;
+    --accent-purple: #a855f7;
     --text-main: #f8fafc;
     --text-sub: #94a3b8;
 }
@@ -26,6 +27,10 @@ body {
     max-width: 500px;
     margin: 0 auto;
 }
+
+/* KONTROLA WIDOCZNOŚCI DLA RODZICA */
+body:not(.parent-mode) .parent-only-chip { display: none; }
+body:not(.parent-mode) .btn-delete { display: none !important; }
 
 .boost-banner {
     display: none;
@@ -110,13 +115,34 @@ header h1 {
     padding: 12px 15px;
     border-radius: 14px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 8px;
     border: 1px solid rgba(255,255,255,0.05);
 }
 
-.task-card.completed { opacity: 0.5; background: #111827; }
-.task-card.completed .task-title { text-decoration: line-through; }
+.task-card-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.task-card.status-awaiting {
+    border: 1px solid var(--accent-amber);
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.task-card.status-correction {
+    border: 1px solid var(--accent-red);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.task-card.status-completed {
+    opacity: 0.5;
+    background: #111827;
+}
+
+.task-card.status-completed .task-title { text-decoration: line-through; }
 
 .task-title { font-weight: 600; font-size: 0.95rem; }
 
@@ -132,25 +158,41 @@ header h1 {
 
 .assignee-badge { font-size: 0.75rem; color: var(--text-sub); margin-top: 2px; }
 
+.status-note {
+    font-size: 0.8rem;
+    color: var(--accent-red);
+    font-weight: 600;
+    background: rgba(239, 68, 68, 0.15);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.status-waiting-label {
+    font-size: 0.8rem;
+    color: var(--accent-amber);
+    font-weight: 700;
+}
+
 .task-actions { display: flex; gap: 8px; align-items: center; }
 
 .task-photo-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; cursor: pointer; border: 1px solid var(--accent-blue); }
 
-.btn-check, .btn-delete {
+.btn-check, .btn-delete, .btn-approve, .btn-reject {
     border: none;
-    width: 38px;
-    height: 38px;
+    padding: 8px 12px;
     border-radius: 10px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 4px;
 }
 
 .btn-check { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
-.btn-check.done { background: var(--accent-green); color: #000; }
-.btn-delete { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+.btn-approve { background: var(--accent-green); color: #000; }
+.btn-reject { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+.btn-delete { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); width: 38px; height: 38px; justify-content: center; }
 
 .parent-controls {
     display: none;
@@ -249,10 +291,11 @@ body.parent-mode .parent-controls { display: flex; }
 
 body.tile-delete-mode .btn-delete-tile { display: flex; align-items: center; justify-content: center; }
 
-.tile-creator { display: none; gap: 6px; margin-top: 8px; }
+.tile-creator { display: none; gap: 6px; margin-top: 8px; align-items: center; }
 body.parent-mode .tile-creator { display: flex; }
 
-.tile-creator input {
+.tile-creator input[type="text"] {
+    flex: 1;
     background: #0f172a;
     border: 1px solid rgba(255,255,255,0.1);
     color: #fff;
@@ -261,8 +304,26 @@ body.parent-mode .tile-creator { display: flex; }
     font-size: 0.8rem;
 }
 
-.tile-creator input[type="text"] { flex: 1; }
-.tile-creator input[type="number"] { width: 50px; text-align: center; }
+.tile-creator input[type="number"] {
+    width: 45px;
+    text-align: center;
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 6px 4px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+.tile-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.75rem;
+    color: var(--text-sub);
+    cursor: pointer;
+    white-space: nowrap;
+}
 
 .tile-creator button {
     background: var(--accent-blue);
