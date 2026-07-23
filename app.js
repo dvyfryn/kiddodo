@@ -1,4 +1,7 @@
-let currentFilter = 'Paweł'; // Domyślnie startujemy z konkretnym dzieckiem
+// Lista wszystkich zarejestrowanych dzieci w systemie
+const allKids = ["Paweł", "Madzia"];
+
+let currentFilter = 'Paweł'; // Domyślny filtr startowy dla dzieci
 let currentPeriod = 'daily';
 let isParentMode = false;
 let isTileDeleteMode = false;
@@ -346,13 +349,15 @@ function createNewTile() {
     filterTilesBySearch();
 }
 
-// Dodawanie Questu z kafelka – automatyczne wygenerowanie dla obojga gdy wybrano "Wszyscy" w Trybie Rodzica
+// KLUCZOWE: Dodawanie Questu z kafelka
 function addQuestFromTile(title, points) {
     if (currentFilter === 'all') {
-        // W trybie rodzica po wybraniu zakladki "Wszyscy" tworzy quest i Pawłowi i Madzi
-        createQuestCard(title, points, 'Paweł');
-        createQuestCard(title, points, 'Madzia');
+        // Gdy jesteś w Trybie Rodzica i zaznaczysz zakladke "Wszyscy", quest dodaje sie DLA KAŻDEGO DZIECKA W SYSTEMIE
+        allKids.forEach(kid => {
+            createQuestCard(title, points, kid);
+        });
     } else {
+        // Dziecko dodaje quest tylko na swoja własna liste
         createQuestCard(title, points, currentFilter);
     }
 }
@@ -406,7 +411,7 @@ function toggleParentMode() {
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
 
-        // Po wyjściu z trybu rodzica przełączamy z powrotem na Pawła, jeśli aktywny był filtr "Wszyscy"
+        // Gdy rodzic wychodzi z Trybu Rodzica, przełączamy na Pawła (jeśli aktywny był przycisk "Wszyscy")
         if (currentFilter === 'all') {
             const chipPawel = document.getElementById('chip-pawel');
             filterTasks('Paweł', chipPawel);
@@ -421,7 +426,7 @@ function deleteTask(btn) {
     card.remove();
 }
 
-// Inicjalizacja domyślna dla Pawła
+// Startujemy domyślnie z Pawłem
 const chipPawel = document.getElementById('chip-pawel');
 filterTasks('Paweł', chipPawel);
 renderTiles();
