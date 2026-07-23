@@ -4,20 +4,17 @@ let isParentMode = false;
 let isTileDeleteMode = false;
 const PARENT_PIN = "1234";
 
-// Indywidualne konta punktowe Pawła i Madzi
 let scores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-// Indywidualne cele dla każdego dziecka (z możliwością edycji)
 let individualCheckpoints = [
     { id: 1, name: "🍦 Wyjście na lody", target: 30 },
     { id: 2, name: "🎬 Wieczór filmowy z przekąskami", target: 80 },
     { id: 3, name: "🎁 Wymarzona niespodzianka", target: 200 }
 ];
 
-// Wspólny coroczny cel rodzinny
 let sharedYearlyCheckpoint = { id: 99, name: "🚗 Wycieczka rodzinna (Wspólny cel)", target: 1000 };
 
 let questTilesData = [
@@ -29,16 +26,18 @@ let questTilesData = [
     { id: 6, title: "Sprzątanie pokoju", points: 10 }
 ];
 
-// Efektowne wielokolorowe konfetti + wybuch gwiazdek
+// Otwieranie / zamykanie okna z rankingiem
+function openRankingModal() {
+    document.getElementById('ranking-modal').classList.add('open');
+    updateDashboard();
+}
+
+function closeRankingModal() {
+    document.getElementById('ranking-modal').classList.remove('open');
+}
+
 function triggerConfetti() {
-    // Pierwsza fala - tradycyjne konfetti
-    confetti({ 
-        particleCount: 100, 
-        spread: 100, 
-        origin: { y: 0.6 } 
-    });
-    
-    // Druga fala po 200ms - złote i fioletowe gwiazdki
+    confetti({ particleCount: 100, spread: 100, origin: { y: 0.6 } });
     setTimeout(() => {
         confetti({
             particleCount: 50,
@@ -83,7 +82,7 @@ function updateDashboard() {
     container.innerHTML = '';
 
     let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
-    document.getElementById('checkpoints-label').innerHTML = `<i class="fa-solid fa-trophy"></i> Cele dla: ${targetKid}`;
+    document.getElementById('checkpoints-label').innerText = `🏆 Cele dla: ${targetKid}`;
 
     individualCheckpoints.forEach(cp => {
         const kidScore = scores[targetKid][currentPeriod];
@@ -110,7 +109,6 @@ function updateDashboard() {
         container.appendChild(item);
     });
 
-    // Cel rodzinny
     const totalYearly = scores.Paweł.yearly + scores.Madzia.yearly;
     const sharedPercent = Math.min(100, Math.round((totalYearly / sharedYearlyCheckpoint.target) * 100));
     const isSharedReady = totalYearly >= sharedYearlyCheckpoint.target;
@@ -135,17 +133,15 @@ function updateDashboard() {
     container.appendChild(sharedItem);
 }
 
-// Edycja Celu Indywidualnego
 function editCheckpoint(id) {
-    if (!isParentMode) return alert("Musisz odblokować Tryb Rodzica, aby edytować cele!");
-    
+    if (!isParentMode) return;
     const cp = individualCheckpoints.find(c => c.id === id);
     if (!cp) return;
 
-    const newName = prompt("Podaj nową nazwę celu/nagrody:", cp.name);
+    const newName = prompt("Nowa nazwa nagrody:", cp.name);
     if (newName === null) return;
 
-    const newTarget = prompt("Podaj nową próg punktowy:", cp.target);
+    const newTarget = prompt("Nowy próg punktowy:", cp.target);
     if (newTarget === null) return;
 
     cp.name = newName.trim() || cp.name;
@@ -154,14 +150,13 @@ function editCheckpoint(id) {
     updateDashboard();
 }
 
-// Edycja Celu Rodzinnego
 function editSharedCheckpoint() {
-    if (!isParentMode) return alert("Musisz odblokować Tryb Rodzica, aby edytować cel rodzinny!");
+    if (!isParentMode) return;
 
-    const newName = prompt("Podaj nową nazwę celu rodzinnego:", sharedYearlyCheckpoint.name);
+    const newName = prompt("Nowa nazwa celu rodzinnego:", sharedYearlyCheckpoint.name);
     if (newName === null) return;
 
-    const newTarget = prompt("Podaj nowy próg punktowy:", sharedYearlyCheckpoint.target);
+    const newTarget = prompt("Nowy próg punktowy:", sharedYearlyCheckpoint.target);
     if (newTarget === null) return;
 
     sharedYearlyCheckpoint.name = newName.trim() || sharedYearlyCheckpoint.name;
@@ -367,4 +362,3 @@ function deleteTask(btn) {
 }
 
 renderTiles();
-updateDashboard();
