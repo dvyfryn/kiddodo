@@ -1,9 +1,8 @@
-// Wersja: 0.5.1
+// Wersja: 1.0.0
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// KONFIGURACJA FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyAlF_XfCacX98_6NYhkrQ0dI5AC1ykKojU",
     authDomain: "kiddodo-32c0e.firebaseapp.com",
@@ -14,14 +13,6 @@ const firebaseConfig = {
 };
 
 let app, db, docRef;
-try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    docRef = doc(db, "kiddodo", "appState");
-} catch (e) {
-    console.error("Błąd inicjalizacji Firebase:", e);
-}
-
 let currentFilter = 'Paweł';
 let currentPeriod = 'daily';
 let isParentMode = false;
@@ -31,7 +22,13 @@ const PARENT_PIN = "1234";
 let isHappyHourActive = false;
 let pendingTaskIdForPhoto = null;
 
-// FABRYCZNE / DOMYŚLNE STRUKTURY DANYCH
+function getWeekNumber(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
 const defaultData = {
     lastResetDate: new Date().toISOString().split('T')[0],
     lastResetWeek: getWeekNumber(new Date()),
@@ -41,8 +38,7 @@ const defaultData = {
         { id: 1, title: "Ścielenie łóżka", points: 5 },
         { id: 2, title: "Zrobienie lekcji", points: 15 },
         { id: 3, title: "Wyniesienie śmieci", points: 5 },
-        { id: 4, title: "Wyprowadzenie psa", points: 10 },
-        { id: 5, title: "Podlewanie kwiatów", points: 5 }
+        { id: 4, title: "Wyprowadzenie psa", points: 10 }
     ],
     scores: {
         Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
@@ -51,8 +47,7 @@ const defaultData = {
     shopBudget: { Paweł: 0, Madzia: 0 },
     shopItems: [
         { id: 1, icon: "📱", name: "+1h Family Link / Konsola", cost: 20 },
-        { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 },
-        { id: 3, icon: "🍦", name: "Dodatkowa przekąska / słodycz", cost: 15 }
+        { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 }
     ],
     goalsData: {
         Paweł: [
@@ -72,15 +67,6 @@ const defaultData = {
 
 let appState = JSON.parse(JSON.stringify(defaultData));
 
-// POMOCNICZA FUNKCJA DO OBLICZANIA NUMERU TYGODNIA
-function getWeekNumber(d) {
-    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
-}
-
-// BEZPIECZNE SCALANIE DANYCH Z CHMURY I PAMIĘCI
 function sanitizeAndMergeState(incomingState) {
     if (!incomingState || typeof incomingState !== 'object') return;
 
@@ -102,13 +88,8 @@ function sanitizeAndMergeState(incomingState) {
     if (incomingState.goalsData) {
         appState.goalsData = { ...defaultData.goalsData, ...incomingState.goalsData };
     }
-    if (incomingState.lastResetDate) appState.lastResetDate = incomingState.lastResetDate;
-    if (incomingState.lastResetWeek) appState.lastResetWeek = incomingState.lastResetWeek;
-    if (incomingState.lastResetMonth !== undefined) appState.lastResetMonth = incomingState.lastResetMonth;
-    if (incomingState.lastResetYear) appState.lastResetYear = incomingState.lastResetYear;
 }
 
-// AUTOMATYCZNE RESETOWANIE OKRESÓW (DZIEŃ / TYDZIEŃ / MIESIĄC / ROK)
 function checkCalendarResets() {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -118,7 +99,6 @@ function checkCalendarResets() {
 
     let hasChanges = false;
 
-    // 1. RESET DZIENNY (Północ 00:00)
     if (!appState.lastResetDate || appState.lastResetDate !== todayStr) {
         appState.activeTasksList = [];
         appState.scores.Paweł.daily = 0;
@@ -129,7 +109,6 @@ function checkCalendarResets() {
         hasChanges = true;
     }
 
-    // 2. RESET TYGODNIOWY (Nowy tydzień)
     if (appState.lastResetWeek === undefined || appState.lastResetWeek !== currentWeek) {
         appState.scores.Paweł.weekly = 0;
         appState.scores.Madzia.weekly = 0;
@@ -137,7 +116,6 @@ function checkCalendarResets() {
         hasChanges = true;
     }
 
-    // 3. RESET MIESIĘCZNY (Nowy miesiąc)
     if (appState.lastResetMonth === undefined || appState.lastResetMonth !== currentMonth) {
         appState.scores.Paweł.monthly = 0;
         appState.scores.Madzia.monthly = 0;
@@ -145,7 +123,6 @@ function checkCalendarResets() {
         hasChanges = true;
     }
 
-    // 4. RESET ROCZNY (Nowy rok)
     if (appState.lastResetYear === undefined || appState.lastResetYear !== currentYear) {
         appState.scores.Paweł.yearly = 0;
         appState.scores.Madzia.yearly = 0;
@@ -153,31 +130,31 @@ function checkCalendarResets() {
         hasChanges = true;
     }
 
-    if (hasChanges) {
-        saveToStorageAndFirebase();
-    }
+    if (hasChanges) saveToStorageAndFirebase();
 }
 
-// BACKUP W PAMIĘCI PODRĘCZNEJ TELEFONU
 function loadLocalFallback() {
     try {
-        const local = localStorage.getItem('kiddodo_backup_v5');
-        if (local) {
-            sanitizeAndMergeState(JSON.parse(local));
-        }
+        const local = localStorage.getItem('kiddodo_backup_v100');
+        if (local) sanitizeAndMergeState(JSON.parse(local));
     } catch (e) {}
 }
 
 function saveLocalFallback() {
     try {
-        localStorage.setItem('kiddodo_backup_v5', JSON.stringify(appState));
+        localStorage.setItem('kiddodo_backup_v100', JSON.stringify(appState));
     } catch (e) {}
 }
+
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    docRef = doc(db, "kiddodo", "appState");
+} catch (e) {}
 
 loadLocalFallback();
 checkCalendarResets();
 
-// SYNCHRONIZACJA Z CHMURĄ FIREBASE
 if (docRef) {
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -188,8 +165,6 @@ if (docRef) {
         } else {
             saveToStorageAndFirebase();
         }
-    }, (err) => {
-        console.warn("Tryb offline, dane ładowane z telefonu.");
     });
 }
 
@@ -209,7 +184,6 @@ function renderAllUI() {
     updateShopUI();
 }
 
-// WBUDOWANY MODAL PINU
 function openPinModal() {
     if (isParentMode) {
         toggleParentMode(false);
@@ -224,8 +198,7 @@ function closePinModal() {
 }
 
 function submitPin() {
-    const val = document.getElementById('pin-input').value.trim();
-    if (val === PARENT_PIN) {
+    if (document.getElementById('pin-input').value.trim() === PARENT_PIN) {
         closePinModal();
         toggleParentMode(true);
     } else {
@@ -255,7 +228,6 @@ function toggleParentMode(state) {
     updateShopUI();
 }
 
-// ZALICZANIE ZADAŃ I FOTOGRAFIE
 function toggleTask(id) {
     const task = appState.activeTasksList.find(t => t.id === id);
     if (!task) return;
@@ -298,8 +270,7 @@ document.getElementById('camera-input').addEventListener('change', function(e) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-            finalizeTaskCompletion(pendingTaskIdForPhoto, compressedBase64);
+            finalizeTaskCompletion(pendingTaskIdForPhoto, canvas.toDataURL('image/jpeg', 0.6));
             pendingTaskIdForPhoto = null;
         };
         img.src = event.target.result;
@@ -319,7 +290,6 @@ function finalizeTaskCompletion(taskId, photoData) {
         task.points = points;
         isHappyHourActive = false;
         document.getElementById('boost-banner').classList.remove('active');
-        alert("🎉 Zrobiono Quest w trakcie Happy Hour! x3 PKT!");
     }
 
     task.completed = true;
@@ -333,7 +303,7 @@ function finalizeTaskCompletion(taskId, photoData) {
 
     saveToStorageAndFirebase();
     renderAllUI();
-    triggerConfetti();
+    try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); } catch(e){}
 }
 
 function renderTasksList() {
@@ -344,7 +314,6 @@ function renderTasksList() {
         if (task.assignee === currentFilter) {
             const card = document.createElement('div');
             card.className = `task-card ${task.completed ? 'completed' : ''}`;
-            
             const photoHtml = task.photo ? `<img src="${task.photo}" class="task-photo-thumb" onclick="window.viewPhoto('${task.photo}')" />` : '';
 
             card.innerHTML = `
@@ -378,7 +347,6 @@ function addQuestFromTile(title, points) {
         assignee: currentFilter,
         completed: false
     });
-
     saveToStorageAndFirebase();
     renderAllUI();
 }
@@ -399,14 +367,13 @@ function renderTiles() {
         const wrapper = document.createElement('div');
         wrapper.className = 'quest-tile-wrapper';
         wrapper.setAttribute('data-title', tile.title.toLowerCase());
-
         const safeTitle = tile.title.replace(/'/g, "\\'");
 
         wrapper.innerHTML = `
             <button class="quest-tile" onclick="window.addQuestFromTile('${safeTitle}', ${tile.points})">
                 🎯 ${tile.title} (+${tile.points})
             </button>
-            <button class="btn-delete-tile" onclick="window.confirmRemoveTile(${tile.id})" title="Usuń kafelek">
+            <button class="btn-delete-tile" onclick="window.confirmRemoveTile(${tile.id})">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         `;
@@ -442,7 +409,6 @@ function filterTasks(assignee, chipBtn) {
     currentFilter = assignee;
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     if (chipBtn) chipBtn.classList.add('active');
-
     renderAllUI();
 }
 
@@ -459,12 +425,6 @@ function closeRankingModal() {
 function selectKidInModal(kidName) {
     const targetChip = kidName === 'Paweł' ? document.getElementById('chip-pawel') : document.getElementById('chip-madzia');
     filterTasks(kidName, targetChip);
-}
-
-function triggerConfetti() {
-    try {
-        if (typeof confetti === 'function') confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
-    } catch (e) {}
 }
 
 function switchPeriod(period, tabBtn) {
@@ -511,17 +471,13 @@ function renderVialLiquid(vialKey, currentPts, goalsList) {
         const mark = document.createElement('div');
         mark.className = 'mark-item';
         mark.style.bottom = `${markPos}%`;
-
-        mark.innerHTML = `
-            <span class="mark-icon" onclick="window.clickGoalIcon('${goal.name}', ${goal.target}, ${currentPts})">${goal.icon}</span>
-        `;
+        mark.innerHTML = `<span class="mark-icon" onclick="window.clickGoalIcon('${goal.name}', ${goal.target}, ${currentPts})">${goal.icon}</span>`;
         marksContainer.appendChild(mark);
     });
 }
 
 function clickGoalIcon(name, target, current) {
     if (current >= target) {
-        triggerConfetti();
         alert(`🎉 Cel "${name}" został osiągnięty! Rodzic może wręczyć nagrodę!`);
     } else {
         alert(`Cel: "${name}". Wymagane ${target} pkt (Masz: ${current} pkt). Brakuje: ${target - current} pkt.`);
@@ -530,7 +486,6 @@ function clickGoalIcon(name, target, current) {
 
 function updateShopUI() {
     const budget = appState.shopBudget[currentFilter] || 0;
-
     document.getElementById('shop-budget-display').innerText = `Budżet (${currentFilter}): ${budget} pkt`;
 
     const container = document.getElementById('shop-items-container');
@@ -559,7 +514,6 @@ function buyCoupon(itemName, cost, kidName) {
     appState.shopBudget[kidName] -= cost;
     saveToStorageAndFirebase();
     renderAllUI();
-    triggerConfetti();
     alert(`🎟️ GRATULACJE! ${kidName} kupuje kupon: "${itemName}"!\nPokaż ten komunikat rodzicowi!`);
 }
 
@@ -567,17 +521,13 @@ function activateHappyHour() {
     if (!isParentMode) return;
     isHappyHourActive = true;
     document.getElementById('boost-banner').classList.add('active');
-    triggerConfetti();
-    alert("✨ Aktywowano Magiczne Happy Hour! PIERWSZY zrobiony Quest da x3 punktów!");
+    alert("✨ Aktywowano Happy Hour! PIERWSZY zrobiony Quest da x3 punktów!");
 }
 
 function filterTilesBySearch() {
     const query = document.getElementById('tile-search').value.toLowerCase();
-    const wrappers = document.querySelectorAll('.quest-tile-wrapper');
-
-    wrappers.forEach(w => {
-        const title = w.getAttribute('data-title');
-        w.style.display = title.includes(query) ? 'flex' : 'none';
+    document.querySelectorAll('.quest-tile-wrapper').forEach(w => {
+        w.style.display = w.getAttribute('data-title').includes(query) ? 'flex' : 'none';
     });
 }
 
@@ -595,14 +545,14 @@ function toggleTileDeleteMode() {
 
 function addNewGoalPrompt() {
     if (!isParentMode) return;
-    const owner = prompt("Dla kogo ta nagroda? Wpisz: Paweł, Madzia lub Rodzina").trim();
-    if (!['Paweł', 'Madzia', 'Rodzina'].includes(owner)) return alert("Błędny wybór osoby!");
+    const owner = prompt("Dla kogo cel? Wpisz: Paweł, Madzia lub Rodzina").trim();
+    if (!['Paweł', 'Madzia', 'Rodzina'].includes(owner)) return alert("Błędny wybór!");
 
-    const icon = prompt("Wpisz emoji dla celu:", "🎁");
-    const name = prompt("Podaj nazwę celu/nagrody:");
-    const target = parseInt(prompt("Podaj wymagany próg punktowy:"));
+    const icon = prompt("Emoji dla celu:", "🎁");
+    const name = prompt("Nazwa celu/nagrody:");
+    const target = parseInt(prompt("Wymagany próg punktowy:"));
 
-    if (!name || !target) return alert("Wypełnij wszystkie dane!");
+    if (!name || !target) return alert("Brak pełnych danych!");
 
     const key = owner === 'Rodzina' ? 'Shared' : owner;
     if (!appState.goalsData[key]) appState.goalsData[key] = [];
@@ -614,18 +564,17 @@ function addNewGoalPrompt() {
 
 function addNewShopItemPrompt() {
     if (!isParentMode) return;
-    const icon = prompt("Wpisz emoji dla kuponu:", "🎟️");
-    const name = prompt("Podaj nazwę dziennego kuponu:");
-    const cost = parseInt(prompt("Podaj koszt w punktach dziennych:"));
+    const icon = prompt("Emoji dla kuponu:", "🎟️");
+    const name = prompt("Nazwa kuponu:");
+    const cost = parseInt(prompt("Koszt w punktach dziennych:"));
 
-    if (!name || !cost) return alert("Wypełnij wszystkie dane!");
+    if (!name || !cost) return alert("Brak pełnych danych!");
 
     appState.shopItems.push({ id: Date.now(), icon: icon || "🎟️", name: name, cost: cost });
     saveToStorageAndFirebase();
     renderAllUI();
 }
 
-// PRZYPISANIE FUNKCJI DO WINDOW
 window.openRankingModal = openRankingModal;
 window.closeRankingModal = closeRankingModal;
 window.selectKidInModal = selectKidInModal;
@@ -648,5 +597,4 @@ window.viewPhoto = viewPhoto;
 window.addNewGoalPrompt = addNewGoalPrompt;
 window.addNewShopItemPrompt = addNewShopItemPrompt;
 
-// INICJACJA APLIKACJI
 renderAllUI();
