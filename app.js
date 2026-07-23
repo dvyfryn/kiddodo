@@ -1,7 +1,9 @@
-// Lista wszystkich zarejestrowanych dzieci w systemie
+// ===== ZMIENNE STANU I BAZA DANYCH =====
+
+// Lista wszystkich dzieci w systemie
 const allKids = ["Paweł", "Madzia"];
 
-let currentFilter = 'Paweł'; // Domyślny filtr startowy dla dzieci
+let currentFilter = 'Paweł'; // Domyślny filtr startowy
 let currentPeriod = 'daily';
 let isParentMode = false;
 let isTileDeleteMode = false;
@@ -9,22 +11,26 @@ const PARENT_PIN = "1234";
 
 let isHappyHourActive = false;
 
+// Główna punktacja do fiolek (nie maleje przy zakupie kuponów)
 let scores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
+// Dzienny budżet na kupony (pomniejszany po zakupie kuponu)
 let shopBudget = {
     Paweł: 0,
     Madzia: 0
 };
 
+// Oferta dziennych kuponów
 let shopItems = [
     { id: 1, icon: "📱", name: "+1h Family Link / Konsola", cost: 20 },
     { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 },
     { id: 3, icon: "🍦", name: "Dodatkowa przekąska / słodycz", cost: 15 }
 ];
 
+// Cele długoterminowe przypisane do Fiolek
 let goalsData = {
     Paweł: [
         { id: 1, icon: "🍦", name: "Lody", target: 30 },
@@ -39,6 +45,7 @@ let goalsData = {
     ]
 };
 
+// Baza kafelków questów
 let questTilesData = [
     { id: 1, title: "Ścielenie łóżka", points: 5 },
     { id: 2, title: "Zrobienie lekcji", points: 15 },
@@ -46,6 +53,9 @@ let questTilesData = [
     { id: 4, title: "Wyprowadzenie psa", points: 10 },
     { id: 5, title: "Podlewanie kwiatów", points: 5 }
 ];
+
+
+// ===== OBSŁUGA OKNA MODALNEGO (RANKING & SKLEPIK) =====
 
 function openRankingModal() {
     document.getElementById('ranking-modal').classList.add('open');
@@ -57,6 +67,7 @@ function closeRankingModal() {
     document.getElementById('ranking-modal').classList.remove('open');
 }
 
+// Przełączanie dziecka bezpośrednio z poziomu nagłówka w oknie Fiolek
 function selectKidInModal(kidName) {
     const targetChip = kidName === 'Paweł' ? document.getElementById('chip-pawel') : document.getElementById('chip-madzia');
     filterTasks(kidName, targetChip);
@@ -72,6 +83,9 @@ function switchPeriod(period, tabBtn) {
     tabBtn.classList.add('active');
     updateVials();
 }
+
+
+// ===== LOGIKA FIOLEK I WSKAŹNIKÓW PŁYNU =====
 
 function updateVials() {
     const pPts = scores.Paweł[currentPeriod];
@@ -127,6 +141,9 @@ function clickGoalIcon(name, target, current) {
     }
 }
 
+
+// ===== LOGIKA DZIENNEGO SKLEPIKU NAGRÓD =====
+
 function updateShopUI() {
     let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
     const budget = shopBudget[targetKid];
@@ -163,6 +180,9 @@ function buyCoupon(itemName, cost, kidName) {
     updateShopUI();
 }
 
+
+// ===== OBSŁUGA ZADAŃ I BAZY QUESTÓW =====
+
 function activateHappyHour() {
     if (!isParentMode) return;
 
@@ -178,6 +198,7 @@ function toggleTask(btn) {
     let points = parseInt(card.getAttribute('data-points')) || 0;
     const badge = card.querySelector('.points-badge');
 
+    // Mnożnik Happy Hour
     if (isHappyHourActive && !card.classList.contains('completed')) {
         points = points * 3;
         isHappyHourActive = false;
@@ -217,39 +238,6 @@ function toggleTask(btn) {
 
     updateVials();
     updateShopUI();
-}
-
-function addNewGoalPrompt() {
-    if (!isParentMode) return;
-
-    const owner = prompt("Dla kogo ta nagroda? Wpisz: Paweł, Madzia lub Rodzina").trim();
-    if (!['Paweł', 'Madzia', 'Rodzina'].includes(owner)) return alert("Błędny wybór osoby!");
-
-    const icon = prompt("Wpisz emoji dla celu (np. 🍦, 🎮, 🚴‍♂️, 🏖️):", "🎁");
-    const name = prompt("Podaj nazwę celu/nagrody:");
-    const target = parseInt(prompt("Podaj wymagany próg punktowy:"));
-
-    if (!name || !target) return alert("Wypełnij wszystkie dane!");
-
-    const key = owner === 'Rodzina' ? 'Shared' : owner;
-    goalsData[key].push({ id: Date.now(), icon: icon || "🎁", name: name, target: target });
-
-    updateVials();
-    alert("Dodano nowy cel do fiolki!");
-}
-
-function addNewShopItemPrompt() {
-    if (!isParentMode) return;
-
-    const icon = prompt("Wpisz emoji dla kuponu (np. 📱, ⚽, 🍦):", "🎟️");
-    const name = prompt("Podaj nazwę dziennego kuponu:");
-    const cost = parseInt(prompt("Podaj koszt w punktach dziennych:"));
-
-    if (!name || !cost) return alert("Wypełnij wszystkie dane!");
-
-    shopItems.push({ id: Date.now(), icon: icon || "🎟️", name: name, cost: cost });
-    updateShopUI();
-    alert("Dodano nowy kupon do Sklepiku!");
 }
 
 function filterTasks(assignee, chipBtn) {
@@ -349,15 +337,14 @@ function createNewTile() {
     filterTilesBySearch();
 }
 
-// KLUCZOWE: Dodawanie Questu z kafelka
+// DODAWANIE QUESTU DLA WSZYSTKICH LUB DLA KONKRETNEGO DZIECKA
 function addQuestFromTile(title, points) {
     if (currentFilter === 'all') {
-        // Gdy jesteś w Trybie Rodzica i zaznaczysz zakladke "Wszyscy", quest dodaje sie DLA KAŻDEGO DZIECKA W SYSTEMIE
+        // Gdy wybrano "Wszyscy" w Trybie Rodzica -> generujemy quest dla każdego dziecka w tablicy allKids
         allKids.forEach(kid => {
             createQuestCard(title, points, kid);
         });
     } else {
-        // Dziecko dodaje quest tylko na swoja własna liste
         createQuestCard(title, points, currentFilter);
     }
 }
@@ -388,6 +375,9 @@ function createQuestCard(title, points, assignee) {
     }
 }
 
+
+// ===== OBSŁUGA TRYBU RODZICA =====
+
 function toggleParentMode() {
     const lockBtn = document.getElementById('parent-lock');
     const lockIcon = document.getElementById('lock-icon');
@@ -411,7 +401,7 @@ function toggleParentMode() {
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
 
-        // Gdy rodzic wychodzi z Trybu Rodzica, przełączamy na Pawła (jeśli aktywny był przycisk "Wszyscy")
+        // Jeśli przy wyjściu z trybu rodzica aktywny był filtr "Wszyscy", przełączamy z powrotem na Pawła
         if (currentFilter === 'all') {
             const chipPawel = document.getElementById('chip-pawel');
             filterTasks('Paweł', chipPawel);
@@ -426,7 +416,42 @@ function deleteTask(btn) {
     card.remove();
 }
 
-// Startujemy domyślnie z Pawłem
+function addNewGoalPrompt() {
+    if (!isParentMode) return;
+
+    const owner = prompt("Dla kogo ta nagroda? Wpisz: Paweł, Madzia lub Rodzina").trim();
+    if (!['Paweł', 'Madzia', 'Rodzina'].includes(owner)) return alert("Błędny wybór osoby!");
+
+    const icon = prompt("Wpisz emoji dla celu (np. 🍦, 🎮, 🚴‍♂️, 🏖️):", "🎁");
+    const name = prompt("Podaj nazwę celu/nagrody:");
+    const target = parseInt(prompt("Podaj wymagany próg punktowy:"));
+
+    if (!name || !target) return alert("Wypełnij wszystkie dane!");
+
+    const key = owner === 'Rodzina' ? 'Shared' : owner;
+    goalsData[key].push({ id: Date.now(), icon: icon || "🎁", name: name, target: target });
+
+    updateVials();
+    alert("Dodano nowy cel do fiolki!");
+}
+
+function addNewShopItemPrompt() {
+    if (!isParentMode) return;
+
+    const icon = prompt("Wpisz emoji dla kuponu (np. 📱, ⚽, 🍦):", "🎟️");
+    const name = prompt("Podaj nazwę dziennego kuponu:");
+    const cost = parseInt(prompt("Podaj koszt w punktach dziennych:"));
+
+    if (!name || !cost) return alert("Wypełnij wszystkie dane!");
+
+    shopItems.push({ id: Date.now(), icon: icon || "🎟️", name: name, cost: cost });
+    updateShopUI();
+    alert("Dodano nowy kupon do Sklepiku!");
+}
+
+
+// ===== STARTOWE WYWOŁANIE APLIKACJI =====
+
 const chipPawel = document.getElementById('chip-pawel');
 filterTasks('Paweł', chipPawel);
 renderTiles();
