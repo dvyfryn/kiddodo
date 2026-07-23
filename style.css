@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. ZMIENNE GLOBALNE I ZMIENNE STYLE
+   1. ZMIENNE GLOBALNE I BAZOWY RESET
    ========================================================================== */
 :root {
     --bg-color: #0f172a;
@@ -324,7 +324,7 @@ body.tile-delete-mode .btn-delete-tile {
     display: inline-block;
 }
 
-/* FORMULARZ RODZICA DO KAFELKÓW */
+/* FORMULARZ RODZICA */
 .parent-form {
     display: none;
     flex-direction: column;
@@ -474,7 +474,6 @@ body.parent-mode .parent-form {
     color: #fff;
 }
 
-/* WIDOK FIOLEK */
 .vials-container {
     display: flex;
     justify-content: space-between;
@@ -578,7 +577,6 @@ body.parent-mode .parent-form {
     pointer-events: auto;
 }
 
-/* DZIENNY SKLEPIK NAGRÓD */
 .shop-section {
     background: rgba(15, 23, 42, 0.6);
     border-radius: 16px;
@@ -641,7 +639,6 @@ body.parent-mode .parent-form {
     background: var(--text-sub);
 }
 
-/* PANEL RODZICA W OKNIE MODALNYM */
 .parent-goals-manager {
     display: none;
     background: rgba(15, 23, 42, 0.5);
