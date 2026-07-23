@@ -4,23 +4,35 @@ let isParentMode = false;
 let isTileDeleteMode = false;
 const PARENT_PIN = "1234";
 
-let boostMultiplier = 1;
-let boostTimerInterval = null;
+let isHappyHourActive = false;
 
+// Punkty w rankingach (Niezmienne przy kupowaniu kuponów!)
 let scores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-// Dedykowane cele/nagrody dla Pawła, Madzi oraz Rodziny
+// Dzienny budżet na kupony (pomniejszany tylko po zakupie kuponu)
+let shopBudget = {
+    Paweł: 0,
+    Madzia: 0
+};
+
+// Oferta dziennych kuponów
+let shopItems = [
+    { id: 1, icon: "📱", name: "+1h Family Link / Konsola", cost: 20 },
+    { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 },
+    { id: 3, icon: "🍦", name: "Dodatkowa przekąska / słodycz", cost: 15 }
+];
+
 let goalsData = {
     Paweł: [
         { id: 1, icon: "🍦", name: "Lody", target: 30 },
-        { id: 2, name: "🎮 Gra na konsole", icon: "🎮", target: 100 }
+        { id: 2, icon: "🎮", name: "Gra na konsole", target: 100 }
     ],
     Madzia: [
         { id: 3, icon: "🍦", name: "Lody", target: 30 },
-        { id: 4, icon: "🎨 Zestaw plastyczny", name: "Zestaw artystyczny", target: 80 }
+        { id: 4, icon: "🎨", name: "Zestaw artystyczny", target: 80 }
     ],
     Shared: [
         { id: 99, icon: "🚗", name: "Wycieczka Rodzinna", target: 500 }
@@ -32,13 +44,13 @@ let questTilesData = [
     { id: 2, title: "Zrobienie lekcji", points: 15 },
     { id: 3, title: "Wyniesienie śmieci", points: 5 },
     { id: 4, title: "Wyprowadzenie psa", points: 10 },
-    { id: 5, title: "Podlewanie kwiatów", points: 5 },
-    { id: 6, title: "Bałagan w pokoju", points: -10 } // Kafelek ujemny!
+    { id: 5, title: "Podlewanie kwiatów", points: 5 }
 ];
 
 function openRankingModal() {
     document.getElementById('ranking-modal').classList.add('open');
     updateVials();
+    updateShopUI();
 }
 
 function closeRankingModal() {
@@ -56,7 +68,6 @@ function switchPeriod(period, tabBtn) {
     updateVials();
 }
 
-// Aktualizacja wyglądu 3 fiolek
 function updateVials() {
     const pPts = scores.Paweł[currentPeriod];
     const mPts = scores.Madzia[currentPeriod];
@@ -102,7 +113,99 @@ function clickGoalIcon(name, target, current) {
     }
 }
 
-// Dodawanie nowej nagrody do fiolki w Trybie Rodzica
+// AKTUALIZACJA SEKCJI SKLEPIKU DZIENNEGO
+function updateShopUI() {
+    let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
+    const budget = shopBudget[targetKid];
+
+    document.getElementById('shop-budget-display').innerText = `Budżet (${targetKid}): ${budget} pkt`;
+
+    const container = document.getElementById('shop-items-container');
+    container.innerHTML = '';
+
+    shopItems.forEach(item => {
+        const canAfford = budget >= item.cost;
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = `
+            <div>
+                <div class="shop-item-info">${item.icon} ${item.name}</div>
+                <div class="shop-item-cost">Koszt: ${item.cost} pkt dziennych</div>
+            </div>
+            <button class="btn-buy-coupon" ${canAfford ? '' : 'disabled'} onclick="buyCoupon('${item.name}', ${item.cost}, '${targetKid}')">
+                Kup kupon
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ZAKUP KUPONU Przez Dziecko (Uszczupla tylko budżet dzienny sklepiku)
+function buyCoupon(itemName, cost, kidName) {
+    if (shopBudget[kidName] < cost) return alert("Brak wystarczającej ilości dziennych punktów!");
+
+    shopBudget[kidName] -= cost;
+    triggerConfetti();
+    alert(`🎟️ GRATULACJE! ${kidName} kupuje kupon: "${itemName}"!\nPokaż ten komunikat rodzicowi!`);
+    
+    updateShopUI();
+}
+
+// Aktywacja "Happy Hour x3" (Działa tylko na 1 najbliższy quest)
+function activateHappyHour() {
+    if (!isParentMode) return;
+
+    isHappyHourActive = true;
+    document.getElementById('boost-banner').classList.add('active');
+    triggerConfetti();
+    alert("⚡ Aktywowano Happy Hour! PIERWSZY zrobiony Quest dostanie x3 punktów!");
+}
+
+function toggleTask(btn) {
+    const card = btn.closest('.task-card');
+    const assignee = card.getAttribute('data-assignee');
+    let points = parseInt(card.getAttribute('data-points')) || 0;
+
+    // Przelicznik Happy Hour (Mnoży x3 tylko raz)
+    if (isHappyHourActive && !card.classList.contains('completed')) {
+        points = points * 3;
+        isHappyHourActive = false;
+        document.getElementById('boost-banner').classList.remove('active');
+        alert("🎉 Wykorzystano bonus Happy Hour x3!");
+    }
+
+    card.classList.toggle('completed');
+
+    if (card.classList.contains('completed')) {
+        btn.classList.add('done');
+        btn.innerHTML = '<i class="fa-solid fa-check-double"></i>';
+
+        // Punkty do głównych fiolek i rankingów
+        scores[assignee].daily += points;
+        scores[assignee].weekly += points;
+        scores[assignee].monthly += points;
+        scores[assignee].yearly += points;
+
+        // Dzienny budżet do wydania w sklepiku
+        shopBudget[assignee] += points;
+
+        triggerConfetti();
+    } else {
+        btn.classList.remove('done');
+        btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+        scores[assignee].daily -= points;
+        scores[assignee].weekly -= points;
+        scores[assignee].monthly -= points;
+        scores[assignee].yearly -= points;
+
+        shopBudget[assignee] = Math.max(0, shopBudget[assignee] - points);
+    }
+
+    updateVials();
+    updateShopUI();
+}
+
 function addNewGoalPrompt() {
     if (!isParentMode) return;
 
@@ -122,68 +225,18 @@ function addNewGoalPrompt() {
     alert("Dodano nowy cel do fiolki!");
 }
 
-// Aktywacja Power-Up x3 na 1 godzinę
-function activateBoost() {
+function addNewShopItemPrompt() {
     if (!isParentMode) return;
 
-    boostMultiplier = 3;
-    const banner = document.getElementById('boost-banner');
-    banner.classList.add('active');
+    const icon = prompt("Wpisz emoji dla kuponu (np. 📱, ⚽, 🍦):", "🎟️");
+    const name = prompt("Podaj nazwę dziennego kuponu:");
+    const cost = parseInt(prompt("Podaj koszt w punktach dziennych:"));
 
-    let duration = 3600; // 1 godzina w sekundach
-    clearInterval(boostTimerInterval);
+    if (!name || !cost) return alert("Wypełnij wszystkie dane!");
 
-    boostTimerInterval = setInterval(() => {
-        duration--;
-        const m = Math.floor(duration / 60);
-        const s = duration % 60;
-        document.getElementById('boost-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-
-        if (duration <= 0) {
-            clearInterval(boostTimerInterval);
-            boostMultiplier = 1;
-            banner.classList.remove('active');
-            alert("Czas Bonusu x3 dobiegł końca!");
-        }
-    }, 1000);
-
-    triggerConfetti();
-    alert("⚡ Aktywowano Bonus x3 na 1 godzinę!");
-}
-
-function toggleTask(btn) {
-    const card = btn.closest('.task-card');
-    const assignee = card.getAttribute('data-assignee');
-    let points = parseInt(card.getAttribute('data-points')) || 0;
-
-    // Przelicznik bonusowy x3 działa tylko dla dodatnich punktów
-    if (points > 0 && boostMultiplier > 1) {
-        points = points * boostMultiplier;
-    }
-
-    card.classList.toggle('completed');
-
-    if (card.classList.contains('completed')) {
-        btn.classList.add('done');
-        btn.innerHTML = '<i class="fa-solid fa-check-double"></i>';
-
-        scores[assignee].daily += points;
-        scores[assignee].weekly += points;
-        scores[assignee].monthly += points;
-        scores[assignee].yearly += points;
-
-        triggerConfetti();
-    } else {
-        btn.classList.remove('done');
-        btn.innerHTML = '<i class="fa-solid fa-check"></i>';
-
-        scores[assignee].daily -= points;
-        scores[assignee].weekly -= points;
-        scores[assignee].monthly -= points;
-        scores[assignee].yearly -= points;
-    }
-
-    updateVials();
+    shopItems.push({ id: Date.now(), icon: icon || "🎟️", name: name, cost: cost });
+    updateShopUI();
+    alert("Dodano nowy kupon do Sklepiku!");
 }
 
 function filterTasks(assignee, chipBtn) {
@@ -200,6 +253,8 @@ function filterTasks(assignee, chipBtn) {
             card.style.display = 'none';
         }
     });
+
+    updateShopUI();
 }
 
 function renderTiles() {
@@ -210,16 +265,14 @@ function renderTiles() {
 
     questTilesData.forEach(tile => {
         const wrapper = document.createElement('div');
-        const isNegative = tile.points < 0;
-        wrapper.className = `quest-tile-wrapper ${isNegative ? 'minus' : ''}`;
+        wrapper.className = 'quest-tile-wrapper';
         wrapper.setAttribute('data-title', tile.title.toLowerCase());
 
         const safeTitle = tile.title.replace(/'/g, "\\'");
-        const ptsLabel = isNegative ? `${tile.points}` : `+${tile.points}`;
 
         wrapper.innerHTML = `
             <button class="quest-tile" onclick="addQuestFromTile('${safeTitle}', ${tile.points})">
-                ${isNegative ? '⚠️' : '🎯'} ${tile.title} (${ptsLabel})
+                🎯 ${tile.title} (+${tile.points})
             </button>
             <button class="btn-delete-tile" onclick="confirmRemoveTile(${tile.id}, '${safeTitle}')" title="Usuń kafelek">
                 <i class="fa-solid fa-xmark"></i>
@@ -294,17 +347,14 @@ function addQuestFromTile(title, points) {
 function createQuestCard(title, points, assignee) {
     const list = document.getElementById('tasks-list');
     const newTask = document.createElement('div');
-    const isNegative = points < 0;
 
-    newTask.className = `task-card ${isNegative ? 'negative' : ''}`;
+    newTask.className = 'task-card';
     newTask.setAttribute('data-assignee', assignee);
     newTask.setAttribute('data-points', points);
 
-    const ptsLabel = isNegative ? `${points}` : `+${points}`;
-
     newTask.innerHTML = `
         <div class="task-info">
-            <div class="task-title">${title} <span class="points-badge ${isNegative ? 'minus' : ''}">${ptsLabel} pkt</span></div>
+            <div class="task-title">${title} <span class="points-badge">+${points} pkt</span></div>
             <div class="assignee-badge"><i class="fa-solid fa-user"></i> ${assignee}</div>
         </div>
         <div class="task-actions">
@@ -344,6 +394,7 @@ function toggleParentMode() {
         lockIcon.className = "fa-solid fa-lock";
     }
     updateVials();
+    updateShopUI();
 }
 
 function deleteTask(btn) {
