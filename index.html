@@ -16,9 +16,9 @@
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Puchar otwierający Laboratorium i Sklepik -->
-            <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium i Sklepik">
-                <i class="fa-solid fa-flask"></i>
+            <!-- Przywrócony Złoty Puchar -->
+            <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium & Sklepik">
+                <i class="fa-solid fa-trophy"></i>
             </button>
             
             <!-- Usuwanie kafelków -->
@@ -33,16 +33,16 @@
         </div>
     </header>
 
-    <!-- Banner Happy Hour x3 (Gdy aktywny) -->
+    <!-- Banner Happy Hour x3 -->
     <div id="boost-banner" class="boost-banner">
-        ⚡ HAPPY HOUR AKTYWNE! Pierwszy zrobiony Quest da x3 PKT!
+        ✨ MAGIZCZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
     </div>
 
     <!-- Filtry Osób (Główny Widok) -->
     <div class="children-selector">
-        <button class="chip active" onclick="filterTasks('all', this)">Wszyscy</button>
-        <button class="chip" onclick="filterTasks('Paweł', this)">Paweł</button>
-        <button class="chip" onclick="filterTasks('Madzia', this)">Madzia</button>
+        <button class="chip active" id="chip-all" onclick="filterTasks('all', this)">Wszyscy</button>
+        <button class="chip" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
+        <button class="chip" id="chip-madzia" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
 
     <!-- Lista Aktywnych Questów -->
@@ -57,11 +57,11 @@
 
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Panel Rodzica: Dodawanie Questów oraz Power-Up Happy Hour -->
+        <!-- Panel Rodzica -->
         <div class="parent-form">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">➕ Stwórz kafelek Questu:</span>
-                <button class="btn-boost" onclick="activateHappyHour()"><i class="fa-solid fa-bolt"></i> Włącz Happy Hour x3</button>
+                <button class="btn-boost" onclick="activateHappyHour()"><i class="fa-solid fa-wand-magic-sparkles"></i> Happy Hour x3</button>
             </div>
             <div class="parent-inputs">
                 <input type="text" id="new-tile-title" placeholder="Nazwa (np. Mycie naczyń)">
@@ -71,11 +71,11 @@
         </div>
     </div>
 
-    <!-- OKNO MODALNE: FIOLKI + SKLEPIK DZIENNYCH NAGRÓD -->
+    <!-- OKNO MODALNE: MAGICZNE LABORATORIUM & SKLEPIK -->
     <div class="modal-overlay" id="ranking-modal">
-        <div class="modal-content modal-vials">
+        <div class="modal-content modal-vials magical-theme">
             <div class="modal-header">
-                <h2>🧪 Laboratorium & 🛒 Sklepik</h2>
+                <h2>🧙‍♂️ Magiczne Komnaty & 🛒 Sklepik</h2>
                 <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
@@ -87,10 +87,10 @@
                 <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
             </div>
 
-            <!-- EKRAN 3 FIOLEK -->
+            <!-- EKRAN 3 FIOLEK (Klikalne Nagłówki Imion) -->
             <div class="vials-container">
-                <div class="vial-wrapper">
-                    <div class="vial-title">👦 Paweł</div>
+                <div class="vial-wrapper" onclick="selectKidInModal('Paweł')">
+                    <div class="vial-title clickable" id="vial-title-pawel">👦 Paweł ✨</div>
                     <div class="vial-pts" id="pts-vial-pawel">0 pkt</div>
                     <div class="vial-glass">
                         <div class="vial-liquid liquid-pawel" id="liquid-pawel"></div>
@@ -107,8 +107,8 @@
                     </div>
                 </div>
 
-                <div class="vial-wrapper">
-                    <div class="vial-title">👧 Madzia</div>
+                <div class="vial-wrapper" onclick="selectKidInModal('Madzia')">
+                    <div class="vial-title clickable" id="vial-title-madzia">👧 Madzia ✨</div>
                     <div class="vial-pts" id="pts-vial-madzia">0 pkt</div>
                     <div class="vial-glass">
                         <div class="vial-liquid liquid-madzia" id="liquid-madzia"></div>
@@ -117,7 +117,7 @@
                 </div>
             </div>
 
-            <!-- SEKCJA SKLEPIKU DZIENNYCH NAGRÓD -->
+            <!-- SKLEPIK DZIENNYCH NAGRÓD -->
             <div class="shop-section">
                 <div class="shop-header">
                     <span>🛒 Dzienny Sklepik Nagród</span>
@@ -126,13 +126,13 @@
                 <div class="shop-items" id="shop-items-container"></div>
             </div>
 
-            <!-- Zarządzanie Celami w Trybie Rodzica -->
+            <!-- Panel Zarządzania Rodzica -->
             <div class="parent-goals-manager">
                 <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 6px;">
                     🛠️ Panel Rodzica (Dodawanie):
                 </div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn-add-goal" onclick="addNewGoalPrompt()">➕ Długoterminowy cel</button>
+                    <button class="btn-add-goal" onclick="addNewGoalPrompt()">➕ Długoterminowa nagroda</button>
                     <button class="btn-add-goal" style="background: var(--accent-blue); color:#000;" onclick="addNewShopItemPrompt()">🛒 Dzienny Kupon</button>
                 </div>
             </div>
@@ -140,7 +140,7 @@
         </div>
     </div>
 
-    <!-- Główny Skrypt JS -->
+    <!-- Skrypt JS -->
     <script src="app.js"></script>
 </body>
 </html>
