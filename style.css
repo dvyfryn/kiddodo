@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. ZMIENNE GLOBALNE I BAZOWY RESET
+   1. ZMIENNE GLOBALNE I STYLIZACJA PODSTAWOWA
    ========================================================================== */
 :root {
     --bg-color: #0f172a;
@@ -30,7 +30,7 @@ body {
 }
 
 /* ==========================================================================
-   2. NAGŁÓWEK I PRZYCISKI AKCJI
+   2. NAGŁÓWEK I PRZYCISKI
    ========================================================================== */
 header {
     display: flex;
@@ -108,7 +108,7 @@ body.parent-mode #btn-tile-delete-toggle {
 }
 
 /* ==========================================================================
-   4. FILTRY DZIECI
+   4. FILTRY DZIECI (GWARANTOWANE UKRYCIE "WSZYSCY" W CSS)
    ========================================================================== */
 .children-selector {
     display: flex;
@@ -138,8 +138,18 @@ body.parent-mode #btn-tile-delete-toggle {
     font-weight: 700;
 }
 
+/* PRZYCISK "WSZYSCY" JEST DOMYŚLNIE 100% UKRYTY DLA DZIECI */
+#chip-all {
+    display: none !important;
+}
+
+/* POKAZUJE SIĘ TYLKO WTEDY, GDY BODY MA KLASĘ parent-mode */
+body.parent-mode #chip-all {
+    display: block !important;
+}
+
 /* ==========================================================================
-   5. LISTA ZADAŃ (QUESTÓW)
+   5. LISTA QUESTÓW
    ========================================================================== */
 .task-list {
     display: flex;
@@ -390,7 +400,7 @@ body.parent-mode .parent-form {
 }
 
 /* ==========================================================================
-   7. OKNO MODALNE (FIOLEKI I SKLEPIK DZIENNY)
+   7. OKNO MODALNE (FIOLKI I SKLEPIK DZIENNY)
    ========================================================================== */
 .modal-overlay {
     display: none;
