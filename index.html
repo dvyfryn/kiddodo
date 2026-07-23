@@ -4,64 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KiddoDo</title>
-    <!-- Ikony i Konfetti -->
+
+    <!-- Zewnętrzne biblioteki: FontAwesome (ikony) oraz Canvas-Confetti (efekt konfetti) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Plik Stylów CSS -->
+    <!-- Główny arkusz stylów -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- ===== NAGŁÓWEK APLIKACJI ===== -->
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Przywrócony Złoty Puchar -->
+            <!-- Puchar otwierający Magiczne Komnaty & Sklepik -->
             <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium & Sklepik">
                 <i class="fa-solid fa-trophy"></i>
             </button>
             
-            <!-- Usuwanie kafelków -->
+            <!-- Przycisk włączający tryb usuwania kafelków (widoczny tylko dla Rodzica) -->
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
             
-            <!-- Kłódka Rodzica -->
+            <!-- Kłódka Trybu Rodzica -->
             <button class="btn-header" id="parent-lock" onclick="toggleParentMode()">
                 <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
             </button>
         </div>
     </header>
 
-    <!-- Banner Happy Hour x3 -->
+    <!-- Pasek informacyjny Happy Hour x3 -->
     <div id="boost-banner" class="boost-banner">
-        ✨ MAGIZCZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
+        ✨ MAGAZCZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
     </div>
 
-    <!-- Filtry Osób (Główny Widok) -->
+    <!-- ===== SEKCJA FILTRÓW (DZIECI / RODZIC) ===== -->
     <div class="children-selector">
-        <button class="chip active" id="chip-all" onclick="filterTasks('all', this)">Wszyscy</button>
-        <button class="chip" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
+        <!-- Przycisk "Wszyscy" jest domyślnie ukryty dla dzieci (pokazuje się tylko w Trybie Rodzica) -->
+        <button class="chip" id="chip-all" onclick="filterTasks('all', this)">Wszyscy</button>
+        <button class="chip active" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
         <button class="chip" id="chip-madzia" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
 
-    <!-- Lista Aktywnych Questów -->
+    <!-- ===== LISTA AKTYWNYCH ZADAŃ (QUESTÓW) ===== -->
     <div class="task-list" id="tasks-list"></div>
 
-    <!-- Panel Dolny z Kafelkami Questów -->
+    <!-- ===== DOLNY PANEL KAFELKÓW I WYSZUKIWARKI ===== -->
     <div class="bottom-panel">
+        <!-- Wyszukiwarka kafelków -->
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="tile-search" placeholder="Szukaj Questu..." oninput="filterTilesBySearch()">
         </div>
 
+        <!-- Kontener na bazy kafelków A-Z -->
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Panel Rodzica -->
+        <!-- Formularz tworzenia nowych kafelków oraz Happy Hour (Tryb Rodzica) -->
         <div class="parent-form">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">➕ Stwórz kafelek Questu:</span>
-                <button class="btn-boost" onclick="activateHappyHour()"><i class="fa-solid fa-wand-magic-sparkles"></i> Happy Hour x3</button>
+            <div class="parent-form-header">
+                <span class="parent-form-title">➕ Stwórz kafelek Questu:</span>
+                <button class="btn-boost" onclick="activateHappyHour()">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Happy Hour x3
+                </button>
             </div>
             <div class="parent-inputs">
                 <input type="text" id="new-tile-title" placeholder="Nazwa (np. Mycie naczyń)">
@@ -71,15 +78,16 @@
         </div>
     </div>
 
-    <!-- OKNO MODALNE: MAGICZNE LABORATORIUM & SKLEPIK -->
+    <!-- ===== OKNO MODALNE: FIOLKI & SKLEPIK DZIENNY ===== -->
     <div class="modal-overlay" id="ranking-modal">
         <div class="modal-content modal-vials magical-theme">
+            
             <div class="modal-header">
                 <h2>🧙‍♂️ Magiczne Komnaty & 🛒 Sklepik</h2>
                 <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Przełącznik Okresów -->
+            <!-- Przełącznik horyzontu czasowego -->
             <div class="period-tabs">
                 <button class="period-tab active" onclick="switchPeriod('daily', this)">Dzienny</button>
                 <button class="period-tab" onclick="switchPeriod('weekly', this)">Tygodniowy</button>
@@ -87,8 +95,9 @@
                 <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
             </div>
 
-            <!-- EKRAN 3 FIOLEK (Klikalne Nagłówki Imion) -->
+            <!-- Kontener 3 Fiolek z płynem (Paweł, Rodzina, Madzia) -->
             <div class="vials-container">
+                <!-- Fiolka Pawła -->
                 <div class="vial-wrapper" onclick="selectKidInModal('Paweł')">
                     <div class="vial-title clickable" id="vial-title-pawel">👦 Paweł ✨</div>
                     <div class="vial-pts" id="pts-vial-pawel">0 pkt</div>
@@ -98,6 +107,7 @@
                     </div>
                 </div>
 
+                <!-- Fiolka Rodzinna -->
                 <div class="vial-wrapper vial-shared">
                     <div class="vial-title">🚗 Rodzina</div>
                     <div class="vial-pts" id="pts-vial-shared">0 pkt</div>
@@ -107,6 +117,7 @@
                     </div>
                 </div>
 
+                <!-- Fiolka Madzi -->
                 <div class="vial-wrapper" onclick="selectKidInModal('Madzia')">
                     <div class="vial-title clickable" id="vial-title-madzia">👧 Madzia ✨</div>
                     <div class="vial-pts" id="pts-vial-madzia">0 pkt</div>
@@ -117,7 +128,7 @@
                 </div>
             </div>
 
-            <!-- SKLEPIK DZIENNYCH NAGRÓD -->
+            <!-- Dzienny Sklepik Nagród -->
             <div class="shop-section">
                 <div class="shop-header">
                     <span>🛒 Dzienny Sklepik Nagród</span>
@@ -126,21 +137,19 @@
                 <div class="shop-items" id="shop-items-container"></div>
             </div>
 
-            <!-- Panel Zarządzania Rodzica -->
+            <!-- Zarządzanie celami i kuponami w oknie modalnym (Tryb Rodzica) -->
             <div class="parent-goals-manager">
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 6px;">
-                    🛠️ Panel Rodzica (Dodawanie):
-                </div>
-                <div style="display: flex; gap: 6px;">
+                <div class="manager-title">🛠️ Panel Rodzica (Dodawanie):</div>
+                <div class="manager-actions">
                     <button class="btn-add-goal" onclick="addNewGoalPrompt()">➕ Długoterminowa nagroda</button>
-                    <button class="btn-add-goal" style="background: var(--accent-blue); color:#000;" onclick="addNewShopItemPrompt()">🛒 Dzienny Kupon</button>
+                    <button class="btn-add-goal btn-coupon" onclick="addNewShopItemPrompt()">🛒 Dzienny Kupon</button>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <!-- Skrypt JS -->
+    <!-- Skrypt z logiką aplikacji -->
     <script src="app.js"></script>
 </body>
 </html>
