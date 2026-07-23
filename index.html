@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Główny arkusz stylów CSS -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Główny arkusz stylów CSS z unikalnym parametrem v=2 przeciw pamięci cache -->
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -35,15 +35,15 @@
         </div>
     </header>
 
-    <!-- Banner aktywnego Happy Hour x3 -->
+    <!-- Pasek aktywnego Happy Hour x3 -->
     <div id="boost-banner" class="boost-banner">
         ✨ MAGICZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
     </div>
 
     <!-- ===== PANELE FILTRÓW DZIECI ===== -->
     <div class="children-selector">
-        <!-- Przycisk "Wszyscy" widoczny TYLKO w Trybie Rodzica -->
-        <button class="chip" id="chip-all" onclick="filterTasks('all', this)">Wszyscy</button>
+        <!-- Przycisk "Wszyscy" z twardym ukryciem inline - widoczny TYLKO po podaniu PIN-u Rodzica -->
+        <button class="chip" id="chip-all" style="display: none !important;" onclick="filterTasks('all', this)">Wszyscy</button>
         <button class="chip active" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
         <button class="chip" id="chip-madzia" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
@@ -146,7 +146,7 @@
         </div>
     </div>
 
-    <!-- Główny skrypt aplikacji -->
-    <script src="app.js"></script>
+    <!-- Główny skrypt aplikacji z parametrem v=2 -->
+    <script src="app.js?v=2"></script>
 </body>
 </html>
