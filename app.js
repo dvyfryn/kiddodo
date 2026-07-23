@@ -1,5 +1,5 @@
 // ==========================================================================
-// 1. GŁÓWNA BAZA I BEZPIECZNY ZAPIS (LOCAL STORAGE WITH TRY-CATCH)
+// 1. REJESTR DZIECI I BEZPIECZNA TRWAŁA PAMIĘĆ (LOCAL STORAGE)
 // ==========================================================================
 
 const allKids = ["Paweł", "Madzia"];
@@ -12,7 +12,7 @@ const PARENT_PIN = "1234";
 
 let isHappyHourActive = false;
 
-// Domyślne dane początkowe
+// Domyślne wartości początkowe
 const defaultScores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
@@ -50,50 +50,54 @@ const defaultQuestTiles = [
 
 // Zmienne operacyjne
 let activeTasksList = [];
-let scores = defaultScores;
-let shopBudget = defaultShopBudget;
-let shopItems = defaultShopItems;
-let goalsData = defaultGoalsData;
-let questTilesData = defaultQuestTiles;
+let scores = JSON.parse(JSON.stringify(defaultScores));
+let shopBudget = JSON.parse(JSON.stringify(defaultShopBudget));
+let shopItems = JSON.parse(JSON.stringify(defaultShopItems));
+let goalsData = JSON.parse(JSON.stringify(defaultGoalsData));
+let questTilesData = JSON.parse(JSON.stringify(defaultQuestTiles));
 
-// Bezpieczny zapis do pamięci przeglądarki
+// Zapisywanie do pamięci przeglądarki
 function saveToStorage() {
     try {
-        localStorage.setItem('kiddodo_tasks_v2', JSON.stringify(activeTasksList));
-        localStorage.setItem('kiddodo_scores_v2', JSON.stringify(scores));
-        localStorage.setItem('kiddodo_budget_v2', JSON.stringify(shopBudget));
-        localStorage.setItem('kiddodo_shop_v2', JSON.stringify(shopItems));
-        localStorage.setItem('kiddodo_goals_v2', JSON.stringify(goalsData));
-        localStorage.setItem('kiddodo_tiles_v2', JSON.stringify(questTilesData));
+        localStorage.setItem('kiddodo_tasks_v3', JSON.stringify(activeTasksList));
+        localStorage.setItem('kiddodo_scores_v3', JSON.stringify(scores));
+        localStorage.setItem('kiddodo_budget_v3', JSON.stringify(shopBudget));
+        localStorage.setItem('kiddodo_shop_v3', JSON.stringify(shopItems));
+        localStorage.setItem('kiddodo_goals_v3', JSON.stringify(goalsData));
+        localStorage.setItem('kiddodo_tiles_v3', JSON.stringify(questTilesData));
     } catch (e) {
-        console.error("Błąd zapisu w pamięci przeglądarki:", e);
+        console.error("Błąd zapisu:", e);
     }
 }
 
-// Bezpieczne wczytywanie z pamięci przeglądarki
+// Odczytywanie z pamięci przeglądarki (z pełnym zabezpieczeniem pustej pamięci)
 function loadFromStorage() {
     try {
-        const savedTasks = localStorage.getItem('kiddodo_tasks_v2');
-        const savedScores = localStorage.getItem('kiddodo_scores_v2');
-        const savedBudget = localStorage.getItem('kiddodo_budget_v2');
-        const savedShop = localStorage.getItem('kiddodo_shop_v2');
-        const savedGoals = localStorage.getItem('kiddodo_goals_v2');
-        const savedTiles = localStorage.getItem('kiddodo_tiles_v2');
+        const savedTasks = localStorage.getItem('kiddodo_tasks_v3');
+        const savedScores = localStorage.getItem('kiddodo_scores_v3');
+        const savedBudget = localStorage.getItem('kiddodo_budget_v3');
+        const savedShop = localStorage.getItem('kiddodo_shop_v3');
+        const savedGoals = localStorage.getItem('kiddodo_goals_v3');
+        const savedTiles = localStorage.getItem('kiddodo_tiles_v3');
 
         if (savedTasks) activeTasksList = JSON.parse(savedTasks);
         if (savedScores) scores = JSON.parse(savedScores);
         if (savedBudget) shopBudget = JSON.parse(savedBudget);
         if (savedShop) shopItems = JSON.parse(savedShop);
         if (savedGoals) goalsData = JSON.parse(savedGoals);
-        if (savedTiles) questTilesData = JSON.parse(savedTiles);
+        if (savedTiles && JSON.parse(savedTiles).length > 0) {
+            questTilesData = JSON.parse(savedTiles);
+        } else {
+            questTilesData = JSON.parse(JSON.stringify(defaultQuestTiles));
+        }
     } catch (e) {
-        console.error("Błąd wczytywania pamięci:", e);
+        console.error("Błąd wczytywania:", e);
     }
 }
 
 
 // ==========================================================================
-// 2. OKNO MODALNE (FIOLEKI I SKLEPIK)
+// 2. OKNO MODALNE (FIOLEKI I SKLEPIK DZIENNY)
 // ==========================================================================
 
 function openRankingModal() {
@@ -113,7 +117,7 @@ function selectKidInModal(kidName) {
 
 function triggerConfetti() {
     try {
-        confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+        if (typeof confetti === 'function') confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
     } catch (e) {}
 }
 
@@ -126,7 +130,7 @@ function switchPeriod(period, tabBtn) {
 
 
 // ==========================================================================
-// 3. LOGIKA FIOLEK PŁYNU
+// 3. FIOLEKI I WSKAŹNIKI PŁYNU
 // ==========================================================================
 
 function updateVials() {
@@ -190,7 +194,7 @@ function clickGoalIcon(name, target, current) {
 
 function updateShopUI() {
     let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
-    const budget = shopBudget[targetKid];
+    const budget = shopBudget[targetKid] || 0;
 
     document.getElementById('shop-budget-display').innerText = `Budżet (${targetKid}): ${budget} pkt`;
 
@@ -227,7 +231,7 @@ function buyCoupon(itemName, cost, kidName) {
 
 
 // ==========================================================================
-// 5. OBSŁUGA QUESTÓW I KAFELKÓW
+// 5. OBSŁUGA QUESTÓW I KAFELKÓW (ZWIĘKSZONA NIEZAWODNOŚĆ)
 // ==========================================================================
 
 function activateHappyHour() {
@@ -396,9 +400,10 @@ function createNewTile() {
     filterTilesBySearch();
 }
 
-// KLUCZOWE: Kliknięcie kafelka na zakładce "Wszyscy" w Trybie Rodzica tworzy Quest DLA KAŻDEGO DZIECKA
+// BARK JAKICHKOLWIEK PROMPTÓW / MONITÓW! DEDYKOWANE DODAWANIE AUTOMATYCZNE
 function addQuestFromTile(title, points) {
     if (currentFilter === 'all') {
+        // Kliknięcie w zakładce "Wszyscy" generuje DWA ZADANIA: po 1 dla Pawła i po 1 dla Madzi
         allKids.forEach(kid => {
             activeTasksList.push({
                 id: Date.now() + Math.random(),
@@ -410,7 +415,7 @@ function addQuestFromTile(title, points) {
         });
     } else {
         activeTasksList.push({
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             title: title,
             points: points,
             assignee: currentFilter,
@@ -430,19 +435,8 @@ function deleteTask(id) {
 
 
 // ==========================================================================
-// 6. CONTROL PARENT MODE AND #chip-all
+// 6. LOGIKA TRYBU RODZICA
 // ==========================================================================
-
-function updateParentUI() {
-    const chipAll = document.getElementById('chip-all');
-    if (chipAll) {
-        if (isParentMode) {
-            chipAll.hidden = false;
-        } else {
-            chipAll.hidden = true;
-        }
-    }
-}
 
 function toggleParentMode() {
     const lockBtn = document.getElementById('parent-lock');
@@ -473,7 +467,6 @@ function toggleParentMode() {
         }
     }
 
-    updateParentUI();
     updateVials();
     updateShopUI();
 }
@@ -515,12 +508,12 @@ function addNewShopItemPrompt() {
 
 
 // ==========================================================================
-// 7. INITIALIZACJA
+// 7. START APPLIKACJI (ZAWSZE OD PAWŁA DLA DZIECI)
 // ==========================================================================
 
-loadFromStorage();
-updateParentUI();
-
-const chipPawel = document.getElementById('chip-pawel');
-filterTasks('Paweł', chipPawel);
-renderTiles();
+document.addEventListener('DOMContentLoaded', () => {
+    loadFromStorage();
+    const chipPawel = document.getElementById('chip-pawel');
+    filterTasks('Paweł', chipPawel);
+    renderTiles();
+});
