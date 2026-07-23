@@ -16,12 +16,12 @@
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Ikonka Pucharu do otwierania Rankingu -->
-            <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Ranking i Cele">
-                <i class="fa-solid fa-trophy"></i>
+            <!-- Puchar otwierający Laboratorium Fiolek -->
+            <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium Nagród">
+                <i class="fa-solid fa-flask"></i>
             </button>
             
-            <!-- Kosz do usuwania kafelków -->
+            <!-- Usuwanie kafelków -->
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
@@ -33,6 +33,11 @@
         </div>
     </header>
 
+    <!-- Pasek Bonusowy x3 (Gdy aktywny) -->
+    <div id="boost-banner" class="boost-banner">
+        ⚡ BONUS x3 AKTYWNY! Pozostało: <span id="boost-timer">60:00</span>
+    </div>
+
     <!-- Filtry Osób (Główny Widok) -->
     <div class="children-selector">
         <button class="chip active" onclick="filterTasks('all', this)">Wszyscy</button>
@@ -43,7 +48,7 @@
     <!-- Lista Aktywnych Questów -->
     <div class="task-list" id="tasks-list"></div>
 
-    <!-- Panel Dolny z Kafelkami -->
+    <!-- Panel Dolny z Kafelkami Questów -->
     <div class="bottom-panel">
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -52,8 +57,12 @@
 
         <div class="quest-tiles" id="tiles-container"></div>
 
+        <!-- Panel Rodzica: Dodawanie Questów oraz Power-Up x3 -->
         <div class="parent-form">
-            <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">➕ Stwórz nowy kafelek Questu:</span>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">➕ Stwórz kafelek Questu:</span>
+                <button class="btn-boost" onclick="activateBoost()"><i class="fa-solid fa-bolt"></i> Włącz Bonus x3 (1h)</button>
+            </div>
             <div class="parent-inputs">
                 <input type="text" id="new-tile-title" placeholder="Nazwa (np. Mycie naczyń)">
                 <input type="number" id="new-tile-points" placeholder="Pkt" value="10">
@@ -62,14 +71,15 @@
         </div>
     </div>
 
-    <!-- MODAL (OKIENKO) RANKINGU I CHECKPOINTÓW -->
+    <!-- OKNO MODALNE: LABORATORIUM FIOLEK & RANKING -->
     <div class="modal-overlay" id="ranking-modal">
-        <div class="modal-content">
+        <div class="modal-content modal-vials">
             <div class="modal-header">
-                <h2>🏆 Ranking i Nagrody</h2>
+                <h2>🧪 Laboratorium Nagród</h2>
                 <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
+            <!-- Przełącznik Okresów -->
             <div class="period-tabs">
                 <button class="period-tab active" onclick="switchPeriod('daily', this)">Dzienny</button>
                 <button class="period-tab" onclick="switchPeriod('weekly', this)">Tygodniowy</button>
@@ -77,23 +87,49 @@
                 <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
             </div>
 
-            <div class="leaderboard">
-                <div class="score-box" id="box-pawel">
-                    <span class="crown">👑</span>
-                    <div class="name">👦 Paweł</div>
-                    <div class="pts" id="score-pawel">0 pkt</div>
+            <!-- EKRAN 3 FIOLEK (Paweł | Rodzina | Madzia) -->
+            <div class="vials-container">
+                
+                <!-- Fiolka Pawła -->
+                <div class="vial-wrapper">
+                    <div class="vial-title">👦 Paweł</div>
+                    <div class="vial-pts" id="pts-vial-pawel">0 pkt</div>
+                    <div class="vial-glass">
+                        <div class="vial-liquid liquid-pawel" id="liquid-pawel"></div>
+                        <div class="vial-marks" id="marks-pawel"></div>
+                    </div>
                 </div>
-                <div class="score-box" id="box-madzia">
-                    <span class="crown">👑</span>
-                    <div class="name">👧 Madzia</div>
-                    <div class="pts" id="score-madzia">0 pkt</div>
+
+                <!-- Fiolka Rodzinna (Wspólna) -->
+                <div class="vial-wrapper vial-shared">
+                    <div class="vial-title">🚗 Rodzina</div>
+                    <div class="vial-pts" id="pts-vial-shared">0 pkt</div>
+                    <div class="vial-glass">
+                        <div class="vial-liquid liquid-shared" id="liquid-shared"></div>
+                        <div class="vial-marks" id="marks-shared"></div>
+                    </div>
                 </div>
+
+                <!-- Fiolka Madzi -->
+                <div class="vial-wrapper">
+                    <div class="vial-title">👧 Madzia</div>
+                    <div class="vial-pts" id="pts-vial-madzia">0 pkt</div>
+                    <div class="vial-glass">
+                        <div class="vial-liquid liquid-madzia" id="liquid-madzia"></div>
+                        <div class="vial-marks" id="marks-madzia"></div>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="checkpoints-title" id="checkpoints-label">
-                Cele dla: Paweł
+            <!-- Zarządzanie Celami w Trybie Rodzica -->
+            <div class="parent-goals-manager">
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 6px;">
+                    🛠️ Zarządzaj Celami / Nagrodami:
+                </div>
+                <button class="btn-add-goal" onclick="addNewGoalPrompt()">➕ Dodaj nową nagrodę do fiolki</button>
             </div>
-            <div id="checkpoints-container"></div>
+
         </div>
     </div>
 
