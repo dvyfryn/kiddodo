@@ -1,4 +1,4 @@
-<!-- Wersja: 0.3.0 -->
+<!-- Wersja: 0.4.0 -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -15,7 +15,7 @@
 </head>
 <body>
 
-    <!-- Ukryty aparat fotograficzny do weryfikacji zadań -->
+    <!-- Ukryty aparat do weryfikacji zadań zdjęciem -->
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
 
     <!-- ===== NAGŁÓWEK APLIKACJI ===== -->
@@ -28,7 +28,7 @@
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
-            <button class="btn-header" id="parent-lock" onclick="toggleParentMode()">
+            <button class="btn-header" id="parent-lock" onclick="openPinModal()">
                 <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
             </button>
         </div>
@@ -76,7 +76,6 @@
     <!-- ===== OKNO MODALNE: FIOLKI & SKLEPIK DZIENNY ===== -->
     <div class="modal-overlay" id="ranking-modal">
         <div class="modal-content modal-vials magical-theme">
-            
             <div class="modal-header">
                 <h2>🧙‍♂️ Magiczne Komnaty & 🛒 Sklepik</h2>
                 <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
@@ -133,11 +132,22 @@
                     <button class="btn-add-goal btn-coupon" onclick="addNewShopItemPrompt()">🛒 Dzienny Kupon</button>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <!-- Skrypt typu module dla wsparcia nowoczesnego Firebase SDK -->
+    <!-- ===== WBUDOWANE OKIENKO PODAWANIA PINU RODZICA ===== -->
+    <div class="modal-overlay" id="pin-modal">
+        <div class="modal-content pin-box">
+            <h3>🔒 Podaj PIN Rodzica</h3>
+            <input type="password" id="pin-input" placeholder="Wpisz PIN (1234)" maxlength="8">
+            <div class="pin-actions">
+                <button class="btn-modal-sec" onclick="closePinModal()">Anuluj</button>
+                <button class="btn-modal-pri" onclick="submitPin()">Odblokuj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skrypt aplikacji -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
