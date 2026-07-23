@@ -1,4 +1,4 @@
-<!-- Wersja: 1.0.0 -->
+<!-- Wersja: 1.1.0 -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -10,14 +10,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- Arkusz Stylów z wymuszeniem odświeżenia cache -->
-    <link rel="stylesheet" href="style.css?v=100">
+    <!-- Arkusz Stylów z nową wersją v=110 przeciw pamięci cache -->
+    <link rel="stylesheet" href="style.css?v=110">
 </head>
 <body>
 
     <!-- BANNER HAPPY HOUR -->
     <div id="boost-banner" class="boost-banner">
-        <span>🔥 HAPPY HOUR AKTYWNE! Nastepny Quest daje x3 PKT! 🔥</span>
+        <span>🔥 HAPPY HOUR AKTYWNE! Następny Quest daje x3 PKT! 🔥</span>
     </div>
 
     <!-- NAGŁÓWEK -->
@@ -35,10 +35,11 @@
         </div>
     </header>
 
-    <!-- PRZEŁĄCZNIK DZIECI (TYLKO PAWEŁ I MADZIA) -->
+    <!-- PRZEŁĄCZNIK DZIECI + ZAKŁADKA "WSZYSCY" DLA RODZICA -->
     <div class="children-selector">
         <button class="chip active" id="chip-pawel" onclick="window.filterTasks('Paweł', this)">Paweł</button>
         <button class="chip" id="chip-madzia" onclick="window.filterTasks('Madzia', this)">Madzia</button>
+        <button class="chip parent-only-chip" id="chip-wszyscy" onclick="window.filterTasks('Wszyscy', this)">Wszyscy</button>
     </div>
 
     <!-- LISTA AKTYWNYCH ZADAŃ -->
@@ -47,7 +48,7 @@
     <!-- UKRYTY INPUT APARATU -->
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
 
-    <!-- PANEL PANELU RODZICA (Gdy odblokowane) -->
+    <!-- PANEL KONTROLI RODZICA -->
     <div class="parent-controls" id="parent-controls">
         <button class="btn-happy-hour" onclick="window.activateHappyHour()">⚡ Włącz Happy Hour (x3 PKT)</button>
         <button class="btn-add-goal" onclick="window.addNewGoalPrompt()">🏆 Dodaj Nowy Cel</button>
@@ -66,9 +67,13 @@
 
         <div class="quest-tiles" id="tiles-container"></div>
 
+        <!-- FORMULARZ TWORZENIA KAFELKA -->
         <div class="tile-creator" id="tile-creator">
             <input type="text" id="new-tile-title" placeholder="Nazwa nowego Questu...">
             <input type="number" id="new-tile-points" placeholder="Pkt" value="10">
+            <label class="tile-checkbox-label">
+                <input type="checkbox" id="new-tile-photo"> 📸 Zdjęcie
+            </label>
             <button onclick="window.createNewTile()">➕ Stwórz Kafelek</button>
         </div>
     </div>
@@ -115,7 +120,7 @@
                 </div>
             </div>
 
-            <!-- SKLEPIK DZIENNY -->
+            <!-- SKLEPIK -->
             <hr class="modal-divider">
             <div class="shop-section">
                 <h3>🛍️ Sklepik z Nagrodami</h3>
@@ -135,7 +140,7 @@
         </div>
     </div>
 
-    <!-- Skrypt Aplikacji z wymuszeniem odświeżenia cache -->
-    <script type="module" src="app.js?v=100"></script>
+    <!-- Skrypt Aplikacji z parametrem v=110 -->
+    <script type="module" src="app.js?v=110"></script>
 </body>
 </html>
