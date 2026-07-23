@@ -1,3 +1,4 @@
+<!-- Wersja: 0.3.0 -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -5,64 +6,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KiddoDo</title>
 
-    <!-- Zewnętrzne biblioteki: FontAwesome (ikony) oraz Canvas-Confetti -->
+    <!-- Zewnętrzne biblioteki -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Główny arkusz stylów CSS -->
+    <!-- Arkusz stylów CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- ===== NAGŁÓWEK GŁÓWNY APLIKACJI ===== -->
+    <!-- Ukryty aparat fotograficzny do weryfikacji zadań -->
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+
+    <!-- ===== NAGŁÓWEK APLIKACJI ===== -->
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Przycisk Pucharu (Laboratorium & Sklepik) -->
             <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium & Sklepik">
                 <i class="fa-solid fa-trophy"></i>
             </button>
-            
-            <!-- Przycisk kosza do usuwania kafelków przez Rodzica -->
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
-            
-            <!-- Przycisk Kłódki / Rodzic -->
             <button class="btn-header" id="parent-lock" onclick="toggleParentMode()">
                 <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
             </button>
         </div>
     </header>
 
-    <!-- Banner aktywnego Happy Hour x3 -->
+    <!-- Banner Happy Hour -->
     <div id="boost-banner" class="boost-banner">
         ✨ MAGICZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
     </div>
 
     <!-- ===== SEKCJA FILTRÓW DZIECI / RODZICA ===== -->
     <div class="children-selector">
-        <!-- Przycisk "Wszyscy" - ukryty w CSS, dostępny WYŁĄCZNIE po włączeniu Trybu Rodzica -->
         <button class="chip" id="chip-all" onclick="filterTasks('all', this)">Wszyscy</button>
         <button class="chip active" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
         <button class="chip" id="chip-madzia" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
 
-    <!-- ===== LISTA AKTYWNYCH QUESTÓW ===== -->
+    <!-- ===== LISTA AKTYWNYCH ZADAŃ ===== -->
     <div class="task-list" id="tasks-list"></div>
 
     <!-- ===== DOLNY PANEL KAFELKÓW ===== -->
     <div class="bottom-panel">
-        <!-- Wyszukiwarka kafelków -->
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="tile-search" placeholder="Szukaj Questu..." oninput="filterTilesBySearch()">
         </div>
 
-        <!-- Baza Kafelków A-Z -->
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Formularz dodawania kafelków (Tryb Rodzica) -->
         <div class="parent-form">
             <div class="parent-form-header">
                 <span class="parent-form-title">➕ Stwórz kafelek Questu:</span>
@@ -87,7 +82,6 @@
                 <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Zakładki czasowe -->
             <div class="period-tabs">
                 <button class="period-tab active" onclick="switchPeriod('daily', this)">Dzienny</button>
                 <button class="period-tab" onclick="switchPeriod('weekly', this)">Tygodniowy</button>
@@ -95,7 +89,6 @@
                 <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
             </div>
 
-            <!-- Fiolki postępu -->
             <div class="vials-container">
                 <div class="vial-wrapper" onclick="selectKidInModal('Paweł')">
                     <div class="vial-title clickable" id="vial-title-pawel">👦 Paweł ✨</div>
@@ -125,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- Sklepik Nagród -->
             <div class="shop-section">
                 <div class="shop-header">
                     <span>🛒 Dzienny Sklepik Nagród</span>
@@ -134,7 +126,6 @@
                 <div class="shop-items" id="shop-items-container"></div>
             </div>
 
-            <!-- Panel Rodzica w oknie modalnym -->
             <div class="parent-goals-manager">
                 <div class="manager-title">🛠️ Panel Rodzica (Dodawanie):</div>
                 <div class="manager-actions">
@@ -146,7 +137,7 @@
         </div>
     </div>
 
-    <!-- Skrypt z logiką aplikacji -->
-    <script src="app.js"></script>
+    <!-- Skrypt typu module dla wsparcia nowoczesnego Firebase SDK -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
