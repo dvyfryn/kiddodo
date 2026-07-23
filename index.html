@@ -9,21 +9,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Główny arkusz stylów -->
+    <!-- Główny arkusz stylów CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- ===== NAGŁÓWEK GŁÓWNY ===== -->
+    <!-- ===== NAGŁÓWEK GŁÓWNY APLIKACJI ===== -->
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Przycisk Pucharu (Laboratorium / Sklepik) -->
+            <!-- Przycisk Pucharu (Laboratorium & Sklepik) -->
             <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium & Sklepik">
                 <i class="fa-solid fa-trophy"></i>
             </button>
             
-            <!-- Przycisk do usuwania kafelków przez Rodzica -->
+            <!-- Przycisk kosza do usuwania kafelków przez Rodzica -->
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
@@ -35,15 +35,15 @@
         </div>
     </header>
 
-    <!-- Banner Happy Hour -->
+    <!-- Banner aktywnego Happy Hour x3 -->
     <div id="boost-banner" class="boost-banner">
         ✨ MAGICZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
     </div>
 
-    <!-- ===== WYBÓR DZIECKA / RODZICA ===== -->
+    <!-- ===== SEKCJA FILTRÓW DZIECI / RODZICA ===== -->
     <div class="children-selector">
-        <!-- Natywny atrybut hidden uniemożliwia wyświetlenie przycisku dzieciom -->
-        <button class="chip" id="chip-all" hidden onclick="filterTasks('all', this)">Wszyscy</button>
+        <!-- Przycisk "Wszyscy" - ukryty w CSS, dostępny WYŁĄCZNIE po włączeniu Trybu Rodzica -->
+        <button class="chip" id="chip-all" onclick="filterTasks('all', this)">Wszyscy</button>
         <button class="chip active" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
         <button class="chip" id="chip-madzia" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
@@ -59,10 +59,10 @@
             <input type="text" id="tile-search" placeholder="Szukaj Questu..." oninput="filterTilesBySearch()">
         </div>
 
-        <!-- Kontener na bazy kafelków A-Z -->
+        <!-- Baza Kafelków A-Z -->
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Formularz dodawania nowych kafelków przez Rodzica -->
+        <!-- Formularz dodawania kafelków (Tryb Rodzica) -->
         <div class="parent-form">
             <div class="parent-form-header">
                 <span class="parent-form-title">➕ Stwórz kafelek Questu:</span>
@@ -146,7 +146,7 @@
         </div>
     </div>
 
-    <!-- Skrypt logiki -->
+    <!-- Skrypt z logiką aplikacji -->
     <script src="app.js"></script>
 </body>
 </html>
