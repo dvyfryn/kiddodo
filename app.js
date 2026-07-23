@@ -1,9 +1,9 @@
-// Wersja: 0.4.0
+// Wersja: 0.5.1
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// TWOJA BAZA FIREBASE
+// KONFIGURACJA FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyAlF_XfCacX98_6NYhkrQ0dI5AC1ykKojU",
     authDomain: "kiddodo-32c0e.firebaseapp.com",
@@ -13,11 +13,14 @@ const firebaseConfig = {
     appId: "1:655398128952:web:39b190b5ff4b7ef6ff85cd"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const docRef = doc(db, "kiddodo", "appState");
-
-const allKids = ["Paweł", "Madzia"];
+let app, db, docRef;
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    docRef = doc(db, "kiddodo", "appState");
+} catch (e) {
+    console.error("Błąd inicjalizacji Firebase:", e);
+}
 
 let currentFilter = 'Paweł';
 let currentPeriod = 'daily';
@@ -28,8 +31,12 @@ const PARENT_PIN = "1234";
 let isHappyHourActive = false;
 let pendingTaskIdForPhoto = null;
 
-// Domyślny stan aplikacji na wypadek braku połączenia
+// FABRYCZNE / DOMYŚLNE STRUKTURY DANYCH
 const defaultData = {
+    lastResetDate: new Date().toISOString().split('T')[0],
+    lastResetWeek: getWeekNumber(new Date()),
+    lastResetMonth: new Date().getMonth(),
+    lastResetYear: new Date().getFullYear(),
     questTilesData: [
         { id: 1, title: "Ścielenie łóżka", points: 5 },
         { id: 2, title: "Zrobienie lekcji", points: 15 },
@@ -65,42 +72,134 @@ const defaultData = {
 
 let appState = JSON.parse(JSON.stringify(defaultData));
 
-// NATYCHMIASTOWE WCZYTANIE Z LOCALSTORAGE (GWARANCJA BRAKU ZNIKANIA KAFELKÓW)
+// POMOCNICZA FUNKCJA DO OBLICZANIA NUMERU TYGODNIA
+function getWeekNumber(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+// BEZPIECZNE SCALANIE DANYCH Z CHMURY I PAMIĘCI
+function sanitizeAndMergeState(incomingState) {
+    if (!incomingState || typeof incomingState !== 'object') return;
+
+    if (Array.isArray(incomingState.questTilesData) && incomingState.questTilesData.length > 0) {
+        appState.questTilesData = incomingState.questTilesData;
+    }
+    if (Array.isArray(incomingState.activeTasksList)) {
+        appState.activeTasksList = incomingState.activeTasksList;
+    }
+    if (incomingState.scores) {
+        appState.scores = { ...defaultData.scores, ...incomingState.scores };
+    }
+    if (incomingState.shopBudget) {
+        appState.shopBudget = { ...defaultData.shopBudget, ...incomingState.shopBudget };
+    }
+    if (Array.isArray(incomingState.shopItems)) {
+        appState.shopItems = incomingState.shopItems;
+    }
+    if (incomingState.goalsData) {
+        appState.goalsData = { ...defaultData.goalsData, ...incomingState.goalsData };
+    }
+    if (incomingState.lastResetDate) appState.lastResetDate = incomingState.lastResetDate;
+    if (incomingState.lastResetWeek) appState.lastResetWeek = incomingState.lastResetWeek;
+    if (incomingState.lastResetMonth !== undefined) appState.lastResetMonth = incomingState.lastResetMonth;
+    if (incomingState.lastResetYear) appState.lastResetYear = incomingState.lastResetYear;
+}
+
+// AUTOMATYCZNE RESETOWANIE OKRESÓW (DZIEŃ / TYDZIEŃ / MIESIĄC / ROK)
+function checkCalendarResets() {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentWeek = getWeekNumber(now);
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let hasChanges = false;
+
+    // 1. RESET DZIENNY (Północ 00:00)
+    if (!appState.lastResetDate || appState.lastResetDate !== todayStr) {
+        appState.activeTasksList = [];
+        appState.scores.Paweł.daily = 0;
+        appState.scores.Madzia.daily = 0;
+        appState.shopBudget.Paweł = 0;
+        appState.shopBudget.Madzia = 0;
+        appState.lastResetDate = todayStr;
+        hasChanges = true;
+    }
+
+    // 2. RESET TYGODNIOWY (Nowy tydzień)
+    if (appState.lastResetWeek === undefined || appState.lastResetWeek !== currentWeek) {
+        appState.scores.Paweł.weekly = 0;
+        appState.scores.Madzia.weekly = 0;
+        appState.lastResetWeek = currentWeek;
+        hasChanges = true;
+    }
+
+    // 3. RESET MIESIĘCZNY (Nowy miesiąc)
+    if (appState.lastResetMonth === undefined || appState.lastResetMonth !== currentMonth) {
+        appState.scores.Paweł.monthly = 0;
+        appState.scores.Madzia.monthly = 0;
+        appState.lastResetMonth = currentMonth;
+        hasChanges = true;
+    }
+
+    // 4. RESET ROCZNY (Nowy rok)
+    if (appState.lastResetYear === undefined || appState.lastResetYear !== currentYear) {
+        appState.scores.Paweł.yearly = 0;
+        appState.scores.Madzia.yearly = 0;
+        appState.lastResetYear = currentYear;
+        hasChanges = true;
+    }
+
+    if (hasChanges) {
+        saveToStorageAndFirebase();
+    }
+}
+
+// BACKUP W PAMIĘCI PODRĘCZNEJ TELEFONU
 function loadLocalFallback() {
     try {
-        const local = localStorage.getItem('kiddodo_backup_v4');
+        const local = localStorage.getItem('kiddodo_backup_v5');
         if (local) {
-            appState = JSON.parse(local);
+            sanitizeAndMergeState(JSON.parse(local));
         }
     } catch (e) {}
 }
 
 function saveLocalFallback() {
     try {
-        localStorage.setItem('kiddodo_backup_v4', JSON.stringify(appState));
+        localStorage.setItem('kiddodo_backup_v5', JSON.stringify(appState));
     } catch (e) {}
 }
 
 loadLocalFallback();
+checkCalendarResets();
 
-// SYNCHRONIZACJA Z BAZĄ CLOUD FIRESTORE W TLE
-onSnapshot(docRef, (docSnap) => {
-    if (docSnap.exists()) {
-        appState = docSnap.data();
-        saveLocalFallback();
-        renderAllUI();
-    } else {
-        saveToFirebase();
-    }
-}, (err) => {
-    console.log("Praca w trybie offline/local");
-});
+// SYNCHRONIZACJA Z CHMURĄ FIREBASE
+if (docRef) {
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            sanitizeAndMergeState(docSnap.data());
+            checkCalendarResets();
+            saveLocalFallback();
+            renderAllUI();
+        } else {
+            saveToStorageAndFirebase();
+        }
+    }, (err) => {
+        console.warn("Tryb offline, dane ładowane z telefonu.");
+    });
+}
 
-async function saveToFirebase() {
+async function saveToStorageAndFirebase() {
     saveLocalFallback();
-    try {
-        await setDoc(docRef, appState);
-    } catch (e) {}
+    if (docRef) {
+        try {
+            await setDoc(docRef, appState);
+        } catch (e) {}
+    }
 }
 
 function renderAllUI() {
@@ -110,10 +209,9 @@ function renderAllUI() {
     updateShopUI();
 }
 
-// OBSŁUGA WEWNĘTRZNEGO MODALA PINU
+// WBUDOWANY MODAL PINU
 function openPinModal() {
     if (isParentMode) {
-        // Jeśli już zalogowany -> wyloguj
         toggleParentMode(false);
     } else {
         document.getElementById('pin-input').value = '';
@@ -151,17 +249,13 @@ function toggleParentMode(state) {
         lockBtn.classList.remove('unlocked');
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
-
-        if (currentFilter === 'all') {
-            const chipPawel = document.getElementById('chip-pawel');
-            filterTasks('Paweł', chipPawel);
-        }
     }
 
     updateVials();
     updateShopUI();
 }
 
+// ZALICZANIE ZADAŃ I FOTOGRAFIE
 function toggleTask(id) {
     const task = appState.activeTasksList.find(t => t.id === id);
     if (!task) return;
@@ -182,7 +276,7 @@ function toggleTask(id) {
         appState.scores[assignee].yearly = Math.max(0, appState.scores[assignee].yearly - points);
         appState.shopBudget[assignee] = Math.max(0, appState.shopBudget[assignee] - points);
 
-        saveToFirebase();
+        saveToStorageAndFirebase();
         renderAllUI();
     }
 }
@@ -237,7 +331,7 @@ function finalizeTaskCompletion(taskId, photoData) {
     appState.scores[assignee].yearly += points;
     appState.shopBudget[assignee] += points;
 
-    saveToFirebase();
+    saveToStorageAndFirebase();
     renderAllUI();
     triggerConfetti();
 }
@@ -247,11 +341,11 @@ function renderTasksList() {
     container.innerHTML = '';
 
     appState.activeTasksList.forEach(task => {
-        if (currentFilter === 'all' || task.assignee === currentFilter) {
+        if (task.assignee === currentFilter) {
             const card = document.createElement('div');
             card.className = `task-card ${task.completed ? 'completed' : ''}`;
             
-            const photoHtml = task.photo ? `<img src="${task.photo}" class="task-photo-thumb" onclick="viewPhoto('${task.photo}')" />` : '';
+            const photoHtml = task.photo ? `<img src="${task.photo}" class="task-photo-thumb" onclick="window.viewPhoto('${task.photo}')" />` : '';
 
             card.innerHTML = `
                 <div class="task-info">
@@ -260,8 +354,8 @@ function renderTasksList() {
                 </div>
                 <div class="task-actions">
                     ${photoHtml}
-                    <button class="btn-delete" onclick="deleteTask('${task.id}')"><i class="fa-solid fa-trash"></i></button>
-                    <button class="btn-check ${task.completed ? 'done' : ''}" onclick="toggleTask('${task.id}')">
+                    <button class="btn-delete" onclick="window.deleteTask('${task.id}')"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-check ${task.completed ? 'done' : ''}" onclick="window.toggleTask('${task.id}')">
                         <i class="fa-solid ${task.completed ? 'fa-check-double' : 'fa-check'}"></i>
                     </button>
                 </div>
@@ -277,33 +371,21 @@ function viewPhoto(photoUrl) {
 }
 
 function addQuestFromTile(title, points) {
-    if (currentFilter === 'all') {
-        allKids.forEach(kid => {
-            appState.activeTasksList.push({
-                id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                title: title,
-                points: points,
-                assignee: kid,
-                completed: false
-            });
-        });
-    } else {
-        appState.activeTasksList.push({
-            id: 'task_' + Date.now(),
-            title: title,
-            points: points,
-            assignee: currentFilter,
-            completed: false
-        });
-    }
+    appState.activeTasksList.push({
+        id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        title: title,
+        points: points,
+        assignee: currentFilter,
+        completed: false
+    });
 
-    saveToFirebase();
+    saveToStorageAndFirebase();
     renderAllUI();
 }
 
 function deleteTask(id) {
     appState.activeTasksList = appState.activeTasksList.filter(t => t.id !== id);
-    saveToFirebase();
+    saveToStorageAndFirebase();
     renderAllUI();
 }
 
@@ -321,10 +403,10 @@ function renderTiles() {
         const safeTitle = tile.title.replace(/'/g, "\\'");
 
         wrapper.innerHTML = `
-            <button class="quest-tile" onclick="addQuestFromTile('${safeTitle}', ${tile.points})">
+            <button class="quest-tile" onclick="window.addQuestFromTile('${safeTitle}', ${tile.points})">
                 🎯 ${tile.title} (+${tile.points})
             </button>
-            <button class="btn-delete-tile" onclick="confirmRemoveTile(${tile.id})" title="Usuń kafelek">
+            <button class="btn-delete-tile" onclick="window.confirmRemoveTile(${tile.id})" title="Usuń kafelek">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         `;
@@ -342,7 +424,7 @@ function createNewTile() {
     if (!title) return alert("Wpisz nazwę Questu!");
 
     appState.questTilesData.push({ id: Date.now(), title: title, points: points });
-    saveToFirebase();
+    saveToStorageAndFirebase();
     renderAllUI();
 
     titleInput.value = '';
@@ -352,7 +434,7 @@ function createNewTile() {
 
 function confirmRemoveTile(id) {
     appState.questTilesData = appState.questTilesData.filter(t => t.id !== id);
-    saveToFirebase();
+    saveToStorageAndFirebase();
     renderAllUI();
 }
 
@@ -393,9 +475,9 @@ function switchPeriod(period, tabBtn) {
 }
 
 function updateVials() {
-    const pPts = appState.scores.Paweł[currentPeriod];
-    const mPts = appState.scores.Madzia[currentPeriod];
-    const sharedPts = appState.scores.Paweł.yearly + appState.scores.Madzia.yearly;
+    const pPts = appState.scores.Paweł[currentPeriod] || 0;
+    const mPts = appState.scores.Madzia[currentPeriod] || 0;
+    const sharedPts = (appState.scores.Paweł.yearly || 0) + (appState.scores.Madzia.yearly || 0);
 
     document.getElementById('pts-vial-pawel').innerText = `${pPts} pkt`;
     document.getElementById('pts-vial-madzia').innerText = `${mPts} pkt`;
@@ -410,9 +492,9 @@ function updateVials() {
     if (currentFilter === 'Paweł') tPawel.classList.add('selected');
     if (currentFilter === 'Madzia') tMadzia.classList.add('selected');
 
-    renderVialLiquid('pawel', pPts, appState.goalsData.Paweł);
-    renderVialLiquid('madzia', mPts, appState.goalsData.Madzia);
-    renderVialLiquid('shared', sharedPts, appState.goalsData.Shared);
+    renderVialLiquid('pawel', pPts, appState.goalsData.Paweł || []);
+    renderVialLiquid('madzia', mPts, appState.goalsData.Madzia || []);
+    renderVialLiquid('shared', sharedPts, appState.goalsData.Shared || []);
 }
 
 function renderVialLiquid(vialKey, currentPts, goalsList) {
@@ -431,7 +513,7 @@ function renderVialLiquid(vialKey, currentPts, goalsList) {
         mark.style.bottom = `${markPos}%`;
 
         mark.innerHTML = `
-            <span class="mark-icon" onclick="clickGoalIcon('${goal.name}', ${goal.target}, ${currentPts})">${goal.icon}</span>
+            <span class="mark-icon" onclick="window.clickGoalIcon('${goal.name}', ${goal.target}, ${currentPts})">${goal.icon}</span>
         `;
         marksContainer.appendChild(mark);
     });
@@ -447,10 +529,9 @@ function clickGoalIcon(name, target, current) {
 }
 
 function updateShopUI() {
-    let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
-    const budget = appState.shopBudget[targetKid] || 0;
+    const budget = appState.shopBudget[currentFilter] || 0;
 
-    document.getElementById('shop-budget-display').innerText = `Budżet (${targetKid}): ${budget} pkt`;
+    document.getElementById('shop-budget-display').innerText = `Budżet (${currentFilter}): ${budget} pkt`;
 
     const container = document.getElementById('shop-items-container');
     container.innerHTML = '';
@@ -464,7 +545,7 @@ function updateShopUI() {
                 <div class="shop-item-info">${item.icon} ${item.name}</div>
                 <div class="shop-item-cost">Koszt: ${item.cost} pkt dziennych</div>
             </div>
-            <button class="btn-buy-coupon" ${canAfford ? '' : 'disabled'} onclick="buyCoupon('${item.name}', ${item.cost}, '${targetKid}')">
+            <button class="btn-buy-coupon" ${canAfford ? '' : 'disabled'} onclick="window.buyCoupon('${item.name}', ${item.cost}, '${currentFilter}')">
                 Kup kupon
             </button>
         `;
@@ -473,10 +554,10 @@ function updateShopUI() {
 }
 
 function buyCoupon(itemName, cost, kidName) {
-    if (appState.shopBudget[kidName] < cost) return alert("Brak wystarczającej ilości dziennych punktów!");
+    if ((appState.shopBudget[kidName] || 0) < cost) return alert("Brak wystarczającej ilości dziennych punktów!");
 
     appState.shopBudget[kidName] -= cost;
-    saveToFirebase();
+    saveToStorageAndFirebase();
     renderAllUI();
     triggerConfetti();
     alert(`🎟️ GRATULACJE! ${kidName} kupuje kupon: "${itemName}"!\nPokaż ten komunikat rodzicowi!`);
@@ -512,7 +593,39 @@ function toggleTileDeleteMode() {
     }
 }
 
-// ODDAJEMY METODY DO GLOBALNEGO ZAKRESU WINDOW
+function addNewGoalPrompt() {
+    if (!isParentMode) return;
+    const owner = prompt("Dla kogo ta nagroda? Wpisz: Paweł, Madzia lub Rodzina").trim();
+    if (!['Paweł', 'Madzia', 'Rodzina'].includes(owner)) return alert("Błędny wybór osoby!");
+
+    const icon = prompt("Wpisz emoji dla celu:", "🎁");
+    const name = prompt("Podaj nazwę celu/nagrody:");
+    const target = parseInt(prompt("Podaj wymagany próg punktowy:"));
+
+    if (!name || !target) return alert("Wypełnij wszystkie dane!");
+
+    const key = owner === 'Rodzina' ? 'Shared' : owner;
+    if (!appState.goalsData[key]) appState.goalsData[key] = [];
+    appState.goalsData[key].push({ id: Date.now(), icon: icon || "🎁", name: name, target: target });
+
+    saveToStorageAndFirebase();
+    renderAllUI();
+}
+
+function addNewShopItemPrompt() {
+    if (!isParentMode) return;
+    const icon = prompt("Wpisz emoji dla kuponu:", "🎟️");
+    const name = prompt("Podaj nazwę dziennego kuponu:");
+    const cost = parseInt(prompt("Podaj koszt w punktach dziennych:"));
+
+    if (!name || !cost) return alert("Wypełnij wszystkie dane!");
+
+    appState.shopItems.push({ id: Date.now(), icon: icon || "🎟️", name: name, cost: cost });
+    saveToStorageAndFirebase();
+    renderAllUI();
+}
+
+// PRZYPISANIE FUNKCJI DO WINDOW
 window.openRankingModal = openRankingModal;
 window.closeRankingModal = closeRankingModal;
 window.selectKidInModal = selectKidInModal;
@@ -532,6 +645,8 @@ window.openPinModal = openPinModal;
 window.closePinModal = closePinModal;
 window.submitPin = submitPin;
 window.viewPhoto = viewPhoto;
+window.addNewGoalPrompt = addNewGoalPrompt;
+window.addNewShopItemPrompt = addNewShopItemPrompt;
 
-// STARTOWA INICJALIZACJA
+// INICJACJA APLIKACJI
 renderAllUI();
