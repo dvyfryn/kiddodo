@@ -16,44 +16,24 @@
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
+            <!-- Ikonka Pucharu do otwierania Rankingu -->
+            <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Ranking i Cele">
+                <i class="fa-solid fa-trophy"></i>
+            </button>
+            
+            <!-- Kosz do usuwania kafelków -->
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
+            
+            <!-- Kłódka Rodzica -->
             <button class="btn-header" id="parent-lock" onclick="toggleParentMode()">
                 <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
             </button>
         </div>
     </header>
 
-    <!-- DASHBOARD RYWALIZACJI -->
-    <div class="dashboard-card">
-        <div class="period-tabs">
-            <button class="period-tab active" onclick="switchPeriod('daily', this)">Dzienny</button>
-            <button class="period-tab" onclick="switchPeriod('weekly', this)">Tygodniowy</button>
-            <button class="period-tab" onclick="switchPeriod('monthly', this)">Miesięczny</button>
-            <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
-        </div>
-
-        <div class="leaderboard">
-            <div class="score-box" id="box-pawel">
-                <span class="crown">👑</span>
-                <div class="name">👦 Paweł</div>
-                <div class="pts" id="score-pawel">0 pkt</div>
-            </div>
-            <div class="score-box" id="box-madzia">
-                <span class="crown">👑</span>
-                <div class="name">👧 Madzia</div>
-                <div class="pts" id="score-madzia">0 pkt</div>
-            </div>
-        </div>
-
-        <div class="checkpoints-title" id="checkpoints-label">
-            <i class="fa-solid fa-trophy"></i> Indywidualne Cele Nagród:
-        </div>
-        <div id="checkpoints-container"></div>
-    </div>
-
-    <!-- Filtry Osób -->
+    <!-- Filtry Osób (Główny Widok) -->
     <div class="children-selector">
         <button class="chip active" onclick="filterTasks('all', this)">Wszyscy</button>
         <button class="chip" onclick="filterTasks('Paweł', this)">Paweł</button>
@@ -79,6 +59,41 @@
                 <input type="number" id="new-tile-points" placeholder="Pkt" value="10">
                 <button class="btn-add-tile" onclick="createNewTile()"><i class="fa-solid fa-plus"></i></button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL (OKIENKO) RANKINGU I CHECKPOINTÓW -->
+    <div class="modal-overlay" id="ranking-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🏆 Ranking i Nagrody</h2>
+                <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="period-tabs">
+                <button class="period-tab active" onclick="switchPeriod('daily', this)">Dzienny</button>
+                <button class="period-tab" onclick="switchPeriod('weekly', this)">Tygodniowy</button>
+                <button class="period-tab" onclick="switchPeriod('monthly', this)">Miesięczny</button>
+                <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
+            </div>
+
+            <div class="leaderboard">
+                <div class="score-box" id="box-pawel">
+                    <span class="crown">👑</span>
+                    <div class="name">👦 Paweł</div>
+                    <div class="pts" id="score-pawel">0 pkt</div>
+                </div>
+                <div class="score-box" id="box-madzia">
+                    <span class="crown">👑</span>
+                    <div class="name">👧 Madzia</div>
+                    <div class="pts" id="score-madzia">0 pkt</div>
+                </div>
+            </div>
+
+            <div class="checkpoints-title" id="checkpoints-label">
+                Cele dla: Paweł
+            </div>
+            <div id="checkpoints-container"></div>
         </div>
     </div>
 
