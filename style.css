@@ -355,6 +355,10 @@ body.parent-mode .parent-goals-manager { display: block; }
 
 .chip.active { background: var(--accent-blue); color: #000; font-weight: 700; }
 
+/* Ukrycie przycisku "Wszyscy" w trybie dzieci */
+#chip-all { display: none; }
+body.parent-mode #chip-all { display: block; }
+
 .task-list { display: flex; flex-direction: column; gap: 12px; }
 
 .task-card {
