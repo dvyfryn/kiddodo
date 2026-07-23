@@ -1,5 +1,5 @@
 // ==========================================================================
-// 1. DANE, STAN APKLIKACJI I LOCAL STORAGE (TRWAŁA PAMIĘĆ)
+// 1. GŁÓWNA BAZA I BEZPIECZNY ZAPIS (LOCAL STORAGE WITH TRY-CATCH)
 // ==========================================================================
 
 const allKids = ["Paweł", "Madzia"];
@@ -12,21 +12,21 @@ const PARENT_PIN = "1234";
 
 let isHappyHourActive = false;
 
-// Domyślna punktacja
-let defaultScores = {
+// Domyślne dane początkowe
+const defaultScores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-let defaultShopBudget = { Paweł: 0, Madzia: 0 };
+const defaultShopBudget = { Paweł: 0, Madzia: 0 };
 
-let defaultShopItems = [
+const defaultShopItems = [
     { id: 1, icon: "📱", name: "+1h Family Link / Konsola", cost: 20 },
     { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 },
     { id: 3, icon: "🍦", name: "Dodatkowa przekąska / słodycz", cost: 15 }
 ];
 
-let defaultGoalsData = {
+const defaultGoalsData = {
     Paweł: [
         { id: 1, icon: "🍦", name: "Lody", target: 30 },
         { id: 2, icon: "🎮", name: "Gra na konsole", target: 100 }
@@ -40,7 +40,7 @@ let defaultGoalsData = {
     ]
 };
 
-let defaultQuestTiles = [
+const defaultQuestTiles = [
     { id: 1, title: "Ścielenie łóżka", points: 5 },
     { id: 2, title: "Zrobienie lekcji", points: 15 },
     { id: 3, title: "Wyniesienie śmieci", points: 5 },
@@ -48,7 +48,7 @@ let defaultQuestTiles = [
     { id: 5, title: "Podlewanie kwiatów", points: 5 }
 ];
 
-// Inicjalizacja stałych ładowanych z LocalStorage
+// Zmienne operacyjne
 let activeTasksList = [];
 let scores = defaultScores;
 let shopBudget = defaultShopBudget;
@@ -56,36 +56,44 @@ let shopItems = defaultShopItems;
 let goalsData = defaultGoalsData;
 let questTilesData = defaultQuestTiles;
 
-// Funkcja zapisująca CAŁY stan do pamięci podręcznej przeglądarki
+// Bezpieczny zapis do pamięci przeglądarki
 function saveToStorage() {
-    localStorage.setItem('kiddodo_tasks', JSON.stringify(activeTasksList));
-    localStorage.setItem('kiddodo_scores', JSON.stringify(scores));
-    localStorage.setItem('kiddodo_shop_budget', JSON.stringify(shopBudget));
-    localStorage.setItem('kiddodo_shop_items', JSON.stringify(shopItems));
-    localStorage.setItem('kiddodo_goals', JSON.stringify(goalsData));
-    localStorage.setItem('kiddodo_tiles', JSON.stringify(questTilesData));
+    try {
+        localStorage.setItem('kiddodo_tasks_v2', JSON.stringify(activeTasksList));
+        localStorage.setItem('kiddodo_scores_v2', JSON.stringify(scores));
+        localStorage.setItem('kiddodo_budget_v2', JSON.stringify(shopBudget));
+        localStorage.setItem('kiddodo_shop_v2', JSON.stringify(shopItems));
+        localStorage.setItem('kiddodo_goals_v2', JSON.stringify(goalsData));
+        localStorage.setItem('kiddodo_tiles_v2', JSON.stringify(questTilesData));
+    } catch (e) {
+        console.error("Błąd zapisu w pamięci przeglądarki:", e);
+    }
 }
 
-// Funkcja wczytująca dane z pamięci po odświeżeniu
+// Bezpieczne wczytywanie z pamięci przeglądarki
 function loadFromStorage() {
-    const savedTasks = localStorage.getItem('kiddodo_tasks');
-    const savedScores = localStorage.getItem('kiddodo_scores');
-    const savedBudget = localStorage.getItem('kiddodo_shop_budget');
-    const savedItems = localStorage.getItem('kiddodo_shop_items');
-    const savedGoals = localStorage.getItem('kiddodo_goals');
-    const savedTiles = localStorage.getItem('kiddodo_tiles');
+    try {
+        const savedTasks = localStorage.getItem('kiddodo_tasks_v2');
+        const savedScores = localStorage.getItem('kiddodo_scores_v2');
+        const savedBudget = localStorage.getItem('kiddodo_budget_v2');
+        const savedShop = localStorage.getItem('kiddodo_shop_v2');
+        const savedGoals = localStorage.getItem('kiddodo_goals_v2');
+        const savedTiles = localStorage.getItem('kiddodo_tiles_v2');
 
-    if (savedTasks) activeTasksList = JSON.parse(savedTasks);
-    if (savedScores) scores = JSON.parse(savedScores);
-    if (savedBudget) shopBudget = JSON.parse(savedBudget);
-    if (savedItems) shopItems = JSON.parse(savedItems);
-    if (savedGoals) goalsData = JSON.parse(savedGoals);
-    if (savedTiles) questTilesData = JSON.parse(savedTiles);
+        if (savedTasks) activeTasksList = JSON.parse(savedTasks);
+        if (savedScores) scores = JSON.parse(savedScores);
+        if (savedBudget) shopBudget = JSON.parse(savedBudget);
+        if (savedShop) shopItems = JSON.parse(savedShop);
+        if (savedGoals) goalsData = JSON.parse(savedGoals);
+        if (savedTiles) questTilesData = JSON.parse(savedTiles);
+    } catch (e) {
+        console.error("Błąd wczytywania pamięci:", e);
+    }
 }
 
 
 // ==========================================================================
-// 2. OKNO MODALNE (FIOLEKI I SKLEPIK DZIENNY)
+// 2. OKNO MODALNE (FIOLEKI I SKLEPIK)
 // ==========================================================================
 
 function openRankingModal() {
@@ -104,7 +112,9 @@ function selectKidInModal(kidName) {
 }
 
 function triggerConfetti() {
-    confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+    try {
+        confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+    } catch (e) {}
 }
 
 function switchPeriod(period, tabBtn) {
@@ -116,7 +126,7 @@ function switchPeriod(period, tabBtn) {
 
 
 // ==========================================================================
-// 3. FIOLEKI PŁYNU I RENDEROWANIE WSKAŹNIKÓW
+// 3. LOGIKA FIOLEK PŁYNU
 // ==========================================================================
 
 function updateVials() {
@@ -175,7 +185,7 @@ function clickGoalIcon(name, target, current) {
 
 
 // ==========================================================================
-// 4. LOGIKA SKLEPIKU DZIENNEGO
+// 4. SKLEPIK DZIENNY
 // ==========================================================================
 
 function updateShopUI() {
@@ -217,7 +227,7 @@ function buyCoupon(itemName, cost, kidName) {
 
 
 // ==========================================================================
-// 5. DZIAŁANIE ZADAŃ (QUESTÓW) I KAFELKÓW
+// 5. OBSŁUGA QUESTÓW I KAFELKÓW
 // ==========================================================================
 
 function activateHappyHour() {
@@ -237,7 +247,6 @@ function toggleTask(id) {
     const assignee = task.assignee;
     let points = task.points;
 
-    // Obsługa Happy Hour
     if (isHappyHourActive && !task.completed) {
         points = points * 3;
         task.points = points;
@@ -387,10 +396,9 @@ function createNewTile() {
     filterTilesBySearch();
 }
 
-// TWORZENIE ZADAŃ DLA DZIECI LUB DLA WSZYSTKICH NA RAZ
+// KLUCZOWE: Kliknięcie kafelka na zakładce "Wszyscy" w Trybie Rodzica tworzy Quest DLA KAŻDEGO DZIECKA
 function addQuestFromTile(title, points) {
     if (currentFilter === 'all') {
-        // Gdy wybrano zakładkę "Wszyscy" w Trybie Rodzica -> generuje quest po 1 sztuce dla każdego dziecka
         allKids.forEach(kid => {
             activeTasksList.push({
                 id: Date.now() + Math.random(),
@@ -422,17 +430,16 @@ function deleteTask(id) {
 
 
 // ==========================================================================
-// 6. OBSŁUGA TRYBU RODZICA I PRZYCISKU "WSZYSCY"
+// 6. CONTROL PARENT MODE AND #chip-all
 // ==========================================================================
 
 function updateParentUI() {
     const chipAll = document.getElementById('chip-all');
     if (chipAll) {
-        // Wymuszone ukrycie/pokazanie JS bezpośrednio na elemencie w DOM
         if (isParentMode) {
-            chipAll.style.setProperty('display', 'block', 'important');
+            chipAll.hidden = false;
         } else {
-            chipAll.style.setProperty('display', 'none', 'important');
+            chipAll.hidden = true;
         }
     }
 }
@@ -460,7 +467,6 @@ function toggleParentMode() {
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
 
-        // Gdy rodzic wyłącza swój tryb, filtr od razu bezpiecznie wraca na Pawła
         if (currentFilter === 'all') {
             const chipPawel = document.getElementById('chip-pawel');
             filterTasks('Paweł', chipPawel);
@@ -509,7 +515,7 @@ function addNewShopItemPrompt() {
 
 
 // ==========================================================================
-// 7. INICJALIZACJA SYSTEMU ON START
+// 7. INITIALIZACJA
 // ==========================================================================
 
 loadFromStorage();
