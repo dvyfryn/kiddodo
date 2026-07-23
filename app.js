@@ -1,10 +1,9 @@
-// Wersja: 0.3.0
+// Wersja: 0.4.0
 
-// Importy modułowe z Firebase SDK 10
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// TWOJA KONFIGURACJA FIREBASE
+// TWOJA BAZA FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyAlF_XfCacX98_6NYhkrQ0dI5AC1ykKojU",
     authDomain: "kiddodo-32c0e.firebaseapp.com",
@@ -18,7 +17,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "kiddodo", "appState");
 
-// Rejestr Dzieci
 const allKids = ["Paweł", "Madzia"];
 
 let currentFilter = 'Paweł';
@@ -30,7 +28,7 @@ const PARENT_PIN = "1234";
 let isHappyHourActive = false;
 let pendingTaskIdForPhoto = null;
 
-// Domyślne struktury danych
+// Domyślny stan aplikacji na wypadek braku połączenia
 const defaultData = {
     questTilesData: [
         { id: 1, title: "Ścielenie łóżka", points: 5 },
@@ -67,69 +65,116 @@ const defaultData = {
 
 let appState = JSON.parse(JSON.stringify(defaultData));
 
-// POMOCNIK PÓŁNOCY (Czyszczenie starych zdjęć o 00:00)
-function cleanupOldPhotos(tasks) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    let cleaned = false;
-
-    tasks.forEach(task => {
-        if (task.completedDate && task.completedDate !== todayStr && task.photo) {
-            delete task.photo;
-            cleaned = true;
+// NATYCHMIASTOWE WCZYTANIE Z LOCALSTORAGE (GWARANCJA BRAKU ZNIKANIA KAFELKÓW)
+function loadLocalFallback() {
+    try {
+        const local = localStorage.getItem('kiddodo_backup_v4');
+        if (local) {
+            appState = JSON.parse(local);
         }
-    });
-
-    return cleaned;
+    } catch (e) {}
 }
 
-// SYNCHRONIZACJA Z CHMURĄ FIREBASE NA ŻYWO
+function saveLocalFallback() {
+    try {
+        localStorage.setItem('kiddodo_backup_v4', JSON.stringify(appState));
+    } catch (e) {}
+}
+
+loadLocalFallback();
+
+// SYNCHRONIZACJA Z BAZĄ CLOUD FIRESTORE W TLE
 onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
         appState = docSnap.data();
-
-        // Wykonaj czyszczenie starych zdjęć z poprzednich dni
-        if (appState.activeTasksList && cleanupOldPhotos(appState.activeTasksList)) {
-            saveToFirebase();
-        }
-
-        renderTasksList();
-        renderTiles();
-        updateVials();
-        updateShopUI();
+        saveLocalFallback();
+        renderAllUI();
     } else {
-        // Pierwsze uruchomienie bazy – zapis wartości domyślnych
         saveToFirebase();
     }
+}, (err) => {
+    console.log("Praca w trybie offline/local");
 });
 
 async function saveToFirebase() {
+    saveLocalFallback();
     try {
         await setDoc(docRef, appState);
-    } catch (e) {
-        console.error("Błąd zapisu do Firebase:", e);
+    } catch (e) {}
+}
+
+function renderAllUI() {
+    renderTasksList();
+    renderTiles();
+    updateVials();
+    updateShopUI();
+}
+
+// OBSŁUGA WEWNĘTRZNEGO MODALA PINU
+function openPinModal() {
+    if (isParentMode) {
+        // Jeśli już zalogowany -> wyloguj
+        toggleParentMode(false);
+    } else {
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-modal').classList.add('open');
     }
 }
 
-// ==========================================================================
-// EKRAN I OBSŁUGA ZADAŃ Z APARATEM FOTOGRAFICZNYM
-// ==========================================================================
+function closePinModal() {
+    document.getElementById('pin-modal').classList.remove('open');
+}
+
+function submitPin() {
+    const val = document.getElementById('pin-input').value.trim();
+    if (val === PARENT_PIN) {
+        closePinModal();
+        toggleParentMode(true);
+    } else {
+        alert("Błędny PIN!");
+    }
+}
+
+function toggleParentMode(state) {
+    isParentMode = state;
+    const lockBtn = document.getElementById('parent-lock');
+    const lockIcon = document.getElementById('lock-icon');
+
+    if (isParentMode) {
+        document.body.classList.add('parent-mode');
+        lockBtn.classList.add('unlocked');
+        lockIcon.className = "fa-solid fa-lock-open";
+    } else {
+        isTileDeleteMode = false;
+        document.body.classList.remove('parent-mode');
+        document.body.classList.remove('tile-delete-mode');
+        lockBtn.classList.remove('unlocked');
+        document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
+        lockIcon.className = "fa-solid fa-lock";
+
+        if (currentFilter === 'all') {
+            const chipPawel = document.getElementById('chip-pawel');
+            filterTasks('Paweł', chipPawel);
+        }
+    }
+
+    updateVials();
+    updateShopUI();
+}
 
 function toggleTask(id) {
     const task = appState.activeTasksList.find(t => t.id === id);
     if (!task) return;
 
     if (!task.completed) {
-        // Przed zaliczeniem prosimy o wykonanie zdjęcia
         pendingTaskIdForPhoto = id;
         document.getElementById('camera-input').click();
     } else {
-        // Cofanie zaliczenia
         const assignee = task.assignee;
         const points = task.points;
 
         task.completed = false;
         delete task.photo;
-        delete task.completedDate;
 
         appState.scores[assignee].daily = Math.max(0, appState.scores[assignee].daily - points);
         appState.scores[assignee].weekly = Math.max(0, appState.scores[assignee].weekly - points);
@@ -138,10 +183,10 @@ function toggleTask(id) {
         appState.shopBudget[assignee] = Math.max(0, appState.shopBudget[assignee] - points);
 
         saveToFirebase();
+        renderAllUI();
     }
 }
 
-// Zapis zdjęcia po zrobieniu przez aparat
 document.getElementById('camera-input').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file || !pendingTaskIdForPhoto) return;
@@ -150,7 +195,6 @@ document.getElementById('camera-input').addEventListener('change', function(e) {
     reader.onload = function(event) {
         const img = new Image();
         img.onload = function() {
-            // Kompresja zdjęcia do lekkiego formatu Base64 (max 350px width)
             const canvas = document.createElement('canvas');
             const maxW = 350;
             const scale = maxW / img.width;
@@ -181,12 +225,11 @@ function finalizeTaskCompletion(taskId, photoData) {
         task.points = points;
         isHappyHourActive = false;
         document.getElementById('boost-banner').classList.remove('active');
-        alert("🎉 Zrobiono Quest w trakcie Happy Hour! Punkty pomnożone x3!");
+        alert("🎉 Zrobiono Quest w trakcie Happy Hour! x3 PKT!");
     }
 
     task.completed = true;
     task.photo = photoData;
-    task.completedDate = new Date().toISOString().split('T')[0];
 
     appState.scores[assignee].daily += points;
     appState.scores[assignee].weekly += points;
@@ -195,6 +238,7 @@ function finalizeTaskCompletion(taskId, photoData) {
     appState.shopBudget[assignee] += points;
 
     saveToFirebase();
+    renderAllUI();
     triggerConfetti();
 }
 
@@ -207,7 +251,7 @@ function renderTasksList() {
             const card = document.createElement('div');
             card.className = `task-card ${task.completed ? 'completed' : ''}`;
             
-            const photoHtml = task.photo ? `<img src="${task.photo}" class="task-photo-thumb" onclick="viewPhoto('${task.photo}')" title="Kliknij zdjęcie" />` : '';
+            const photoHtml = task.photo ? `<img src="${task.photo}" class="task-photo-thumb" onclick="viewPhoto('${task.photo}')" />` : '';
 
             card.innerHTML = `
                 <div class="task-info">
@@ -229,7 +273,7 @@ function renderTasksList() {
 
 function viewPhoto(photoUrl) {
     const w = window.open("");
-    w.document.write(`<img src="${photoUrl}" style="max-width:100%; height:auto; display:block; margin: 20px auto; border-radius: 10px;" />`);
+    w.document.write(`<img src="${photoUrl}" style="max-width:100%; display:block; margin:20px auto; border-radius:12px;" />`);
 }
 
 function addQuestFromTile(title, points) {
@@ -254,11 +298,13 @@ function addQuestFromTile(title, points) {
     }
 
     saveToFirebase();
+    renderAllUI();
 }
 
 function deleteTask(id) {
     appState.activeTasksList = appState.activeTasksList.filter(t => t.id !== id);
     saveToFirebase();
+    renderAllUI();
 }
 
 function renderTiles() {
@@ -278,7 +324,7 @@ function renderTiles() {
             <button class="quest-tile" onclick="addQuestFromTile('${safeTitle}', ${tile.points})">
                 🎯 ${tile.title} (+${tile.points})
             </button>
-            <button class="btn-delete-tile" onclick="confirmRemoveTile(${tile.id}, '${safeTitle}')" title="Usuń kafelek">
+            <button class="btn-delete-tile" onclick="confirmRemoveTile(${tile.id})" title="Usuń kafelek">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         `;
@@ -297,20 +343,17 @@ function createNewTile() {
 
     appState.questTilesData.push({ id: Date.now(), title: title, points: points });
     saveToFirebase();
+    renderAllUI();
 
     titleInput.value = '';
     document.getElementById('tile-search').value = '';
     filterTilesBySearch();
 }
 
-function confirmRemoveTile(id, title) {
-    const pin = prompt(`Aby usunąć kafelek:\n"${title}"\npodaj PIN rodzica:`);
-    if (pin === PARENT_PIN) {
-        appState.questTilesData = appState.questTilesData.filter(t => t.id !== id);
-        saveToFirebase();
-    } else if (pin !== null) {
-        alert("Błędny PIN!");
-    }
+function confirmRemoveTile(id) {
+    appState.questTilesData = appState.questTilesData.filter(t => t.id !== id);
+    saveToFirebase();
+    renderAllUI();
 }
 
 function filterTasks(assignee, chipBtn) {
@@ -318,42 +361,7 @@ function filterTasks(assignee, chipBtn) {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     if (chipBtn) chipBtn.classList.add('active');
 
-    renderTasksList();
-    updateVials();
-    updateShopUI();
-}
-
-function toggleParentMode() {
-    const lockBtn = document.getElementById('parent-lock');
-    const lockIcon = document.getElementById('lock-icon');
-
-    if (!isParentMode) {
-        const pin = prompt("Podaj PIN rodzica:");
-        if (pin === PARENT_PIN) {
-            isParentMode = true;
-            document.body.classList.add('parent-mode');
-            lockBtn.classList.add('unlocked');
-            lockIcon.className = "fa-solid fa-lock-open";
-        } else if (pin !== null) {
-            alert("Błędny PIN!");
-        }
-    } else {
-        isParentMode = false;
-        isTileDeleteMode = false;
-        document.body.classList.remove('parent-mode');
-        document.body.classList.remove('tile-delete-mode');
-        lockBtn.classList.remove('unlocked');
-        document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
-        lockIcon.className = "fa-solid fa-lock";
-
-        if (currentFilter === 'all') {
-            const chipPawel = document.getElementById('chip-pawel');
-            filterTasks('Paweł', chipPawel);
-        }
-    }
-
-    updateVials();
-    updateShopUI();
+    renderAllUI();
 }
 
 function openRankingModal() {
@@ -469,6 +477,7 @@ function buyCoupon(itemName, cost, kidName) {
 
     appState.shopBudget[kidName] -= cost;
     saveToFirebase();
+    renderAllUI();
     triggerConfetti();
     alert(`🎟️ GRATULACJE! ${kidName} kupuje kupon: "${itemName}"!\nPokaż ten komunikat rodzicowi!`);
 }
@@ -503,36 +512,7 @@ function toggleTileDeleteMode() {
     }
 }
 
-function addNewGoalPrompt() {
-    if (!isParentMode) return;
-    const owner = prompt("Dla kogo ta nagroda? Wpisz: Paweł, Madzia lub Rodzina").trim();
-    if (!['Paweł', 'Madzia', 'Rodzina'].includes(owner)) return alert("Błędny wybór osoby!");
-
-    const icon = prompt("Wpisz emoji dla celu:", "🎁");
-    const name = prompt("Podaj nazwę celu/nagrody:");
-    const target = parseInt(prompt("Podaj wymagany próg punktowy:"));
-
-    if (!name || !target) return alert("Wypełnij wszystkie dane!");
-
-    const key = owner === 'Rodzina' ? 'Shared' : owner;
-    appState.goalsData[key].push({ id: Date.now(), icon: icon || "🎁", name: name, target: target });
-
-    saveToFirebase();
-}
-
-function addNewShopItemPrompt() {
-    if (!isParentMode) return;
-    const icon = prompt("Wpisz emoji dla kuponu:", "🎟️");
-    const name = prompt("Podaj nazwę dziennego kuponu:");
-    const cost = parseInt(prompt("Podaj koszt w punktach dziennych:"));
-
-    if (!name || !cost) return alert("Wypełnij wszystkie dane!");
-
-    appState.shopItems.push({ id: Date.now(), icon: icon || "🎟️", name: name, cost: cost });
-    saveToFirebase();
-}
-
-// WYSTAWIANIE FUNKCJI DO DOM DLA OBSŁUGI HTML ONCLICK
+// ODDAJEMY METODY DO GLOBALNEGO ZAKRESU WINDOW
 window.openRankingModal = openRankingModal;
 window.closeRankingModal = closeRankingModal;
 window.selectKidInModal = selectKidInModal;
@@ -548,7 +528,10 @@ window.createNewTile = createNewTile;
 window.addQuestFromTile = addQuestFromTile;
 window.deleteTask = deleteTask;
 window.toggleTask = toggleTask;
-window.toggleParentMode = toggleParentMode;
-window.addNewGoalPrompt = addNewGoalPrompt;
-window.addNewShopItemPrompt = addNewShopItemPrompt;
+window.openPinModal = openPinModal;
+window.closePinModal = closePinModal;
+window.submitPin = submitPin;
 window.viewPhoto = viewPhoto;
+
+// STARTOWA INICJALIZACJA
+renderAllUI();
