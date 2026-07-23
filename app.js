@@ -1,6 +1,8 @@
-// ===== ZMIENNE STANU I BAZA DANYCH =====
+// ==========================================================================
+// 1. STANY GŁÓWNE I REJESTR DZIECI
+// ==========================================================================
 
-// Lista wszystkich dzieci w systemie
+// Lista zarejestrowanych dzieci w systemie
 const allKids = ["Paweł", "Madzia"];
 
 let currentFilter = 'Paweł'; // Domyślny filtr startowy
@@ -11,19 +13,19 @@ const PARENT_PIN = "1234";
 
 let isHappyHourActive = false;
 
-// Główna punktacja do fiolek (nie maleje przy zakupie kuponów)
+// Punktacje fiolek
 let scores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-// Dzienny budżet na kupony (pomniejszany po zakupie kuponu)
+// Dzienny budżet na kupony
 let shopBudget = {
     Paweł: 0,
     Madzia: 0
 };
 
-// Oferta dziennych kuponów
+// Baza dziennych kuponów
 let shopItems = [
     { id: 1, icon: "📱", name: "+1h Family Link / Konsola", cost: 20 },
     { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 },
@@ -45,7 +47,7 @@ let goalsData = {
     ]
 };
 
-// Baza kafelków questów
+// Baza kafelków z nazwami questów
 let questTilesData = [
     { id: 1, title: "Ścielenie łóżka", points: 5 },
     { id: 2, title: "Zrobienie lekcji", points: 15 },
@@ -55,7 +57,9 @@ let questTilesData = [
 ];
 
 
-// ===== OBSŁUGA OKNA MODALNEGO (RANKING & SKLEPIK) =====
+// ==========================================================================
+// 2. OBSŁUGA OKNA MODALNEGO (RANKING & SKLEPIK)
+// ==========================================================================
 
 function openRankingModal() {
     document.getElementById('ranking-modal').classList.add('open');
@@ -67,7 +71,6 @@ function closeRankingModal() {
     document.getElementById('ranking-modal').classList.remove('open');
 }
 
-// Przełączanie dziecka bezpośrednio z poziomu nagłówka w oknie Fiolek
 function selectKidInModal(kidName) {
     const targetChip = kidName === 'Paweł' ? document.getElementById('chip-pawel') : document.getElementById('chip-madzia');
     filterTasks(kidName, targetChip);
@@ -85,7 +88,9 @@ function switchPeriod(period, tabBtn) {
 }
 
 
-// ===== LOGIKA FIOLEK I WSKAŹNIKÓW PŁYNU =====
+// ==========================================================================
+// 3. LOGIKA VIALS (FIOLEK Z MIKSTURĄ)
+// ==========================================================================
 
 function updateVials() {
     const pPts = scores.Paweł[currentPeriod];
@@ -142,7 +147,9 @@ function clickGoalIcon(name, target, current) {
 }
 
 
-// ===== LOGIKA DZIENNEGO SKLEPIKU NAGRÓD =====
+// ==========================================================================
+// 4. DZIENNY SKLEPIK NAGRÓD
+// ==========================================================================
 
 function updateShopUI() {
     let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
@@ -181,7 +188,9 @@ function buyCoupon(itemName, cost, kidName) {
 }
 
 
-// ===== OBSŁUGA ZADAŃ I BAZY QUESTÓW =====
+// ==========================================================================
+// 5. OBSŁUGA ZADAŃ (QUESTÓW) I HAPPY HOUR
+// ==========================================================================
 
 function activateHappyHour() {
     if (!isParentMode) return;
@@ -198,7 +207,7 @@ function toggleTask(btn) {
     let points = parseInt(card.getAttribute('data-points')) || 0;
     const badge = card.querySelector('.points-badge');
 
-    // Mnożnik Happy Hour
+    // Mnożnik Happy Hour x3 dla pierwszego wykonanego questa
     if (isHappyHourActive && !card.classList.contains('completed')) {
         points = points * 3;
         isHappyHourActive = false;
@@ -337,10 +346,10 @@ function createNewTile() {
     filterTilesBySearch();
 }
 
-// DODAWANIE QUESTU DLA WSZYSTKICH LUB DLA KONKRETNEGO DZIECKA
+// DODAJE QUEST DLA KAŻDEGO DZIECKA (GDY RODZIC JEST NA ZAKŁADCE "WSZYSCY")
 function addQuestFromTile(title, points) {
     if (currentFilter === 'all') {
-        // Gdy wybrano "Wszyscy" w Trybie Rodzica -> generujemy quest dla każdego dziecka w tablicy allKids
+        // Pętla przechodzi przez całą tablicę allKids i tworzy osobną kartę dla Pawła i dla Madzi
         allKids.forEach(kid => {
             createQuestCard(title, points, kid);
         });
@@ -372,11 +381,23 @@ function createQuestCard(title, points, assignee) {
 
     if (currentFilter !== 'all' && currentFilter !== assignee) {
         newTask.style.display = 'none';
+    } else {
+        newTask.style.display = 'flex';
     }
 }
 
 
-// ===== OBSŁUGA TRYBU RODZICA =====
+// ==========================================================================
+// 6. LOGIKA TRYBU RODZICA (ZARZĄDZANIE WIDOCZNOŚCIĄ #chip-all)
+// ==========================================================================
+
+function updateParentUI() {
+    const chipAll = document.getElementById('chip-all');
+    if (chipAll) {
+        // Bezpośrednia zmiana stylu w kodzie JS (omija problemy z cachem CSS w Safari)
+        chipAll.style.display = isParentMode ? 'block' : 'none';
+    }
+}
 
 function toggleParentMode() {
     const lockBtn = document.getElementById('parent-lock');
@@ -401,12 +422,14 @@ function toggleParentMode() {
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
 
-        // Jeśli przy wyjściu z trybu rodzica aktywny był filtr "Wszyscy", przełączamy z powrotem na Pawła
+        // Gdy wychodzimy z trybu rodzica i aktywny był filtr "Wszyscy", przełączamy na Pawła
         if (currentFilter === 'all') {
             const chipPawel = document.getElementById('chip-pawel');
             filterTasks('Paweł', chipPawel);
         }
     }
+
+    updateParentUI();
     updateVials();
     updateShopUI();
 }
@@ -450,8 +473,11 @@ function addNewShopItemPrompt() {
 }
 
 
-// ===== STARTOWE WYWOŁANIE APLIKACJI =====
+// ==========================================================================
+// 7. INITIALIZACJA APPIKACJI ON START
+// ==========================================================================
 
 const chipPawel = document.getElementById('chip-pawel');
 filterTasks('Paweł', chipPawel);
+updateParentUI();
 renderTiles();
