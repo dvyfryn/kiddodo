@@ -1,4 +1,4 @@
-let currentFilter = 'all';
+let currentFilter = 'Paweł'; // Domyślnie startujemy z konkretnym dzieckiem
 let currentPeriod = 'daily';
 let isParentMode = false;
 let isTileDeleteMode = false;
@@ -54,7 +54,6 @@ function closeRankingModal() {
     document.getElementById('ranking-modal').classList.remove('open');
 }
 
-// Przełączanie aktywnego dziecka bezpośrednio z poziomu nagłówków w okienku Fiolek
 function selectKidInModal(kidName) {
     const targetChip = kidName === 'Paweł' ? document.getElementById('chip-pawel') : document.getElementById('chip-madzia');
     filterTasks(kidName, targetChip);
@@ -80,7 +79,6 @@ function updateVials() {
     document.getElementById('pts-vial-madzia').innerText = `${mPts} pkt`;
     document.getElementById('pts-vial-shared').innerText = `${sharedPts} pkt`;
 
-    // Wyróżnienie zaznaczonego nagłówka imienia w okienku
     const tPawel = document.getElementById('vial-title-pawel');
     const tMadzia = document.getElementById('vial-title-madzia');
 
@@ -177,13 +175,11 @@ function toggleTask(btn) {
     let points = parseInt(card.getAttribute('data-points')) || 0;
     const badge = card.querySelector('.points-badge');
 
-    // Mnożnik Happy Hour
     if (isHappyHourActive && !card.classList.contains('completed')) {
         points = points * 3;
         isHappyHourActive = false;
         document.getElementById('boost-banner').classList.remove('active');
         
-        // Zapisanie i wyrenderowanie pomnożonej wartości w karcie zadania
         card.setAttribute('data-points', points);
         if (badge) badge.innerText = `+${points} pkt (x3!)`;
         
@@ -350,13 +346,15 @@ function createNewTile() {
     filterTilesBySearch();
 }
 
+// Dodawanie Questu z kafelka – automatyczne wygenerowanie dla obojga gdy wybrano "Wszyscy" w Trybie Rodzica
 function addQuestFromTile(title, points) {
-    let assignee = currentFilter;
-    if (assignee === 'all') {
-        const choice = confirm("Czy dodajesz ten Quest dla Pawła? (Kliknij 'Anuluj' jeśli dla Madzi)");
-        assignee = choice ? 'Paweł' : 'Madzia';
+    if (currentFilter === 'all') {
+        // W trybie rodzica po wybraniu zakladki "Wszyscy" tworzy quest i Pawłowi i Madzi
+        createQuestCard(title, points, 'Paweł');
+        createQuestCard(title, points, 'Madzia');
+    } else {
+        createQuestCard(title, points, currentFilter);
     }
-    createQuestCard(title, points, assignee);
 }
 
 function createQuestCard(title, points, assignee) {
@@ -407,6 +405,12 @@ function toggleParentMode() {
         lockBtn.classList.remove('unlocked');
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
+
+        // Po wyjściu z trybu rodzica przełączamy z powrotem na Pawła, jeśli aktywny był filtr "Wszyscy"
+        if (currentFilter === 'all') {
+            const chipPawel = document.getElementById('chip-pawel');
+            filterTasks('Paweł', chipPawel);
+        }
     }
     updateVials();
     updateShopUI();
@@ -417,4 +421,7 @@ function deleteTask(btn) {
     card.remove();
 }
 
+// Inicjalizacja domyślna dla Pawła
+const chipPawel = document.getElementById('chip-pawel');
+filterTasks('Paweł', chipPawel);
 renderTiles();
