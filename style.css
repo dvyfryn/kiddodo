@@ -57,6 +57,12 @@ header h1 {
     transition: all 0.2s ease;
 }
 
+.btn-trophy {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-amber);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
 .btn-header.unlocked {
     background: rgba(239, 68, 68, 0.2);
     color: var(--accent-red);
@@ -77,14 +83,58 @@ body.parent-mode #btn-tile-delete-toggle {
     display: inline-block;
 }
 
-/* Dashboard & Rywalizacja */
-.dashboard-card {
+/* OKNO MODALNE (RANKING) */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-overlay.open {
+    display: flex;
+}
+
+.modal-content {
     background: var(--card-bg);
-    border-radius: 20px;
-    padding: 16px;
-    margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 450px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 24px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    font-size: 1.2rem;
+    color: var(--accent-amber);
+}
+
+.btn-close-modal {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    cursor: pointer;
 }
 
 .period-tabs {
@@ -164,9 +214,6 @@ body.parent-mode #btn-tile-delete-toggle {
     font-weight: 700;
     color: var(--accent-blue);
     margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
 }
 
 .checkpoint-item {
@@ -184,6 +231,7 @@ body.parent-mode #btn-tile-delete-toggle {
 .checkpoint-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 6px;
@@ -223,6 +271,21 @@ body.parent-mode #btn-tile-delete-toggle {
 
 body.parent-mode .btn-claim.ready {
     display: block;
+}
+
+/* Przycisk Edycji Celów (Ukryty, widoczny TYLKO dla Rodzica) */
+.btn-edit-cp {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--accent-purple);
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-left: 6px;
+}
+
+body.parent-mode .btn-edit-cp {
+    display: inline-block;
 }
 
 /* Filtry Osób */
@@ -443,7 +506,6 @@ body.tile-delete-mode .quest-tile-wrapper {
     background: rgba(239, 68, 68, 0.1);
 }
 
-/* Formularz Rodzica */
 .parent-form {
     display: none;
     flex-direction: column;
@@ -482,19 +544,4 @@ body.parent-mode .parent-form {
     border-radius: 10px;
     font-weight: 700;
     cursor: pointer;
-
-    /* Przycisk edycji celów – widoczny tylko w Trybie Rodzica */
-.btn-edit-cp {
-    display: none;
-    background: transparent;
-    border: none;
-    color: var(--accent-purple);
-    cursor: pointer;
-    font-size: 0.8rem;
-    margin-left: 6px;
-}
-
-body.parent-mode .btn-edit-cp {
-    display: inline-block;
-}
 }
