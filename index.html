@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Główny arkusz stylów CSS z unikalnym parametrem v=2 przeciw pamięci cache -->
-    <link rel="stylesheet" href="style.css?v=2">
+    <!-- Główny arkusz stylów -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Przycisk Złotego Pucharu (Laboratorium & Sklepik) -->
+            <!-- Przycisk Pucharu (Laboratorium / Sklepik) -->
             <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium & Sklepik">
                 <i class="fa-solid fa-trophy"></i>
             </button>
@@ -35,15 +35,15 @@
         </div>
     </header>
 
-    <!-- Pasek aktywnego Happy Hour x3 -->
+    <!-- Banner Happy Hour -->
     <div id="boost-banner" class="boost-banner">
         ✨ MAGICZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
     </div>
 
-    <!-- ===== PANELE FILTRÓW DZIECI ===== -->
+    <!-- ===== WYBÓR DZIECKA / RODZICA ===== -->
     <div class="children-selector">
-        <!-- Przycisk "Wszyscy" z twardym ukryciem inline - widoczny TYLKO po podaniu PIN-u Rodzica -->
-        <button class="chip" id="chip-all" style="display: none !important;" onclick="filterTasks('all', this)">Wszyscy</button>
+        <!-- Natywny atrybut hidden uniemożliwia wyświetlenie przycisku dzieciom -->
+        <button class="chip" id="chip-all" hidden onclick="filterTasks('all', this)">Wszyscy</button>
         <button class="chip active" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
         <button class="chip" id="chip-madzia" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
@@ -59,10 +59,10 @@
             <input type="text" id="tile-search" placeholder="Szukaj Questu..." oninput="filterTilesBySearch()">
         </div>
 
-        <!-- Baza Kafelków A-Z -->
+        <!-- Kontener na bazy kafelków A-Z -->
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Formularz dodawania kafelków przez Rodzica -->
+        <!-- Formularz dodawania nowych kafelków przez Rodzica -->
         <div class="parent-form">
             <div class="parent-form-header">
                 <span class="parent-form-title">➕ Stwórz kafelek Questu:</span>
@@ -95,7 +95,7 @@
                 <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
             </div>
 
-            <!-- Kontener Fiolek z płynem -->
+            <!-- Fiolki postępu -->
             <div class="vials-container">
                 <div class="vial-wrapper" onclick="selectKidInModal('Paweł')">
                     <div class="vial-title clickable" id="vial-title-pawel">👦 Paweł ✨</div>
@@ -125,7 +125,7 @@
                 </div>
             </div>
 
-            <!-- Dzienny Sklepik Nagród -->
+            <!-- Sklepik Nagród -->
             <div class="shop-section">
                 <div class="shop-header">
                     <span>🛒 Dzienny Sklepik Nagród</span>
@@ -134,7 +134,7 @@
                 <div class="shop-items" id="shop-items-container"></div>
             </div>
 
-            <!-- Panel Dodawania Celów/Kuponów w Oknie Modalnym (Dla Rodzica) -->
+            <!-- Panel Rodzica w oknie modalnym -->
             <div class="parent-goals-manager">
                 <div class="manager-title">🛠️ Panel Rodzica (Dodawanie):</div>
                 <div class="manager-actions">
@@ -146,7 +146,7 @@
         </div>
     </div>
 
-    <!-- Główny skrypt aplikacji z parametrem v=2 -->
-    <script src="app.js?v=2"></script>
+    <!-- Skrypt logiki -->
+    <script src="app.js"></script>
 </body>
 </html>
