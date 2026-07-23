@@ -5,53 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KiddoDo</title>
 
-    <!-- Zewnętrzne biblioteki: FontAwesome (ikony) oraz Canvas-Confetti (efekt konfetti) -->
+    <!-- Zewnętrzne biblioteki: FontAwesome (ikony) oraz Canvas-Confetti -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Główny arkusz stylów -->
+    <!-- Główny arkusz stylów CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- ===== NAGŁÓWEK APLIKACJI ===== -->
+    <!-- ===== NAGŁÓWEK GŁÓWNY ===== -->
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Puchar otwierający Magiczne Komnaty & Sklepik -->
+            <!-- Przycisk Złotego Pucharu (Laboratorium & Sklepik) -->
             <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium & Sklepik">
                 <i class="fa-solid fa-trophy"></i>
             </button>
             
-            <!-- Przycisk włączający tryb usuwania kafelków (widoczny tylko dla Rodzica) -->
+            <!-- Przycisk do usuwania kafelków przez Rodzica -->
             <button class="btn-header" id="btn-tile-delete-toggle" onclick="toggleTileDeleteMode()" title="Tryb usuwania kafelków">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
             
-            <!-- Kłódka Trybu Rodzica -->
+            <!-- Przycisk Kłódki / Rodzic -->
             <button class="btn-header" id="parent-lock" onclick="toggleParentMode()">
                 <i class="fa-solid fa-lock" id="lock-icon"></i> Rodzic
             </button>
         </div>
     </header>
 
-    <!-- Pasek informacyjny Happy Hour x3 -->
+    <!-- Banner aktywnego Happy Hour x3 -->
     <div id="boost-banner" class="boost-banner">
-        ✨ MAGAZCZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
+        ✨ MAGICZNE HAPPY HOUR! Pierwszy Quest da x3 PKT! ✨
     </div>
 
-    <!-- ===== SEKCJA FILTRÓW (DZIECI / RODZIC) ===== -->
+    <!-- ===== PANELE FILTRÓW DZIECI ===== -->
     <div class="children-selector">
-        <!-- Przycisk "Wszyscy" jest domyślnie ukryty dla dzieci (pokazuje się tylko w Trybie Rodzica) -->
+        <!-- Przycisk "Wszyscy" widoczny TYLKO w Trybie Rodzica -->
         <button class="chip" id="chip-all" onclick="filterTasks('all', this)">Wszyscy</button>
         <button class="chip active" id="chip-pawel" onclick="filterTasks('Paweł', this)">Paweł</button>
         <button class="chip" id="chip-madzia" onclick="filterTasks('Madzia', this)">Madzia</button>
     </div>
 
-    <!-- ===== LISTA AKTYWNYCH ZADAŃ (QUESTÓW) ===== -->
+    <!-- ===== LISTA AKTYWNYCH QUESTÓW ===== -->
     <div class="task-list" id="tasks-list"></div>
 
-    <!-- ===== DOLNY PANEL KAFELKÓW I WYSZUKIWARKI ===== -->
+    <!-- ===== DOLNY PANEL KAFELKÓW ===== -->
     <div class="bottom-panel">
         <!-- Wyszukiwarka kafelków -->
         <div class="search-box">
@@ -59,10 +59,10 @@
             <input type="text" id="tile-search" placeholder="Szukaj Questu..." oninput="filterTilesBySearch()">
         </div>
 
-        <!-- Kontener na bazy kafelków A-Z -->
+        <!-- Baza Kafelków A-Z -->
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Formularz tworzenia nowych kafelków oraz Happy Hour (Tryb Rodzica) -->
+        <!-- Formularz dodawania kafelków przez Rodzica -->
         <div class="parent-form">
             <div class="parent-form-header">
                 <span class="parent-form-title">➕ Stwórz kafelek Questu:</span>
@@ -87,7 +87,7 @@
                 <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Przełącznik horyzontu czasowego -->
+            <!-- Zakładki czasowe -->
             <div class="period-tabs">
                 <button class="period-tab active" onclick="switchPeriod('daily', this)">Dzienny</button>
                 <button class="period-tab" onclick="switchPeriod('weekly', this)">Tygodniowy</button>
@@ -95,9 +95,8 @@
                 <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
             </div>
 
-            <!-- Kontener 3 Fiolek z płynem (Paweł, Rodzina, Madzia) -->
+            <!-- Kontener Fiolek z płynem -->
             <div class="vials-container">
-                <!-- Fiolka Pawła -->
                 <div class="vial-wrapper" onclick="selectKidInModal('Paweł')">
                     <div class="vial-title clickable" id="vial-title-pawel">👦 Paweł ✨</div>
                     <div class="vial-pts" id="pts-vial-pawel">0 pkt</div>
@@ -107,7 +106,6 @@
                     </div>
                 </div>
 
-                <!-- Fiolka Rodzinna -->
                 <div class="vial-wrapper vial-shared">
                     <div class="vial-title">🚗 Rodzina</div>
                     <div class="vial-pts" id="pts-vial-shared">0 pkt</div>
@@ -117,7 +115,6 @@
                     </div>
                 </div>
 
-                <!-- Fiolka Madzi -->
                 <div class="vial-wrapper" onclick="selectKidInModal('Madzia')">
                     <div class="vial-title clickable" id="vial-title-madzia">👧 Madzia ✨</div>
                     <div class="vial-pts" id="pts-vial-madzia">0 pkt</div>
@@ -137,7 +134,7 @@
                 <div class="shop-items" id="shop-items-container"></div>
             </div>
 
-            <!-- Zarządzanie celami i kuponami w oknie modalnym (Tryb Rodzica) -->
+            <!-- Panel Dodawania Celów/Kuponów w Oknie Modalnym (Dla Rodzica) -->
             <div class="parent-goals-manager">
                 <div class="manager-title">🛠️ Panel Rodzica (Dodawanie):</div>
                 <div class="manager-actions">
@@ -149,7 +146,7 @@
         </div>
     </div>
 
-    <!-- Skrypt z logiką aplikacji -->
+    <!-- Główny skrypt aplikacji -->
     <script src="app.js"></script>
 </body>
 </html>
