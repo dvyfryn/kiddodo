@@ -16,8 +16,8 @@
     <header>
         <h1>KiddoDo</h1>
         <div class="header-actions">
-            <!-- Puchar otwierający Laboratorium Fiolek -->
-            <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium Nagród">
+            <!-- Puchar otwierający Laboratorium i Sklepik -->
+            <button class="btn-header btn-trophy" onclick="openRankingModal()" title="Laboratorium i Sklepik">
                 <i class="fa-solid fa-flask"></i>
             </button>
             
@@ -33,9 +33,9 @@
         </div>
     </header>
 
-    <!-- Pasek Bonusowy x3 (Gdy aktywny) -->
+    <!-- Banner Happy Hour x3 (Gdy aktywny) -->
     <div id="boost-banner" class="boost-banner">
-        ⚡ BONUS x3 AKTYWNY! Pozostało: <span id="boost-timer">60:00</span>
+        ⚡ HAPPY HOUR AKTYWNE! Pierwszy zrobiony Quest da x3 PKT!
     </div>
 
     <!-- Filtry Osób (Główny Widok) -->
@@ -57,11 +57,11 @@
 
         <div class="quest-tiles" id="tiles-container"></div>
 
-        <!-- Panel Rodzica: Dodawanie Questów oraz Power-Up x3 -->
+        <!-- Panel Rodzica: Dodawanie Questów oraz Power-Up Happy Hour -->
         <div class="parent-form">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">➕ Stwórz kafelek Questu:</span>
-                <button class="btn-boost" onclick="activateBoost()"><i class="fa-solid fa-bolt"></i> Włącz Bonus x3 (1h)</button>
+                <button class="btn-boost" onclick="activateHappyHour()"><i class="fa-solid fa-bolt"></i> Włącz Happy Hour x3</button>
             </div>
             <div class="parent-inputs">
                 <input type="text" id="new-tile-title" placeholder="Nazwa (np. Mycie naczyń)">
@@ -71,11 +71,11 @@
         </div>
     </div>
 
-    <!-- OKNO MODALNE: LABORATORIUM FIOLEK & RANKING -->
+    <!-- OKNO MODALNE: FIOLKI + SKLEPIK DZIENNYCH NAGRÓD -->
     <div class="modal-overlay" id="ranking-modal">
         <div class="modal-content modal-vials">
             <div class="modal-header">
-                <h2>🧪 Laboratorium Nagród</h2>
+                <h2>🧪 Laboratorium & 🛒 Sklepik</h2>
                 <button class="btn-close-modal" onclick="closeRankingModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
@@ -87,10 +87,8 @@
                 <button class="period-tab" onclick="switchPeriod('yearly', this)">Roczny</button>
             </div>
 
-            <!-- EKRAN 3 FIOLEK (Paweł | Rodzina | Madzia) -->
+            <!-- EKRAN 3 FIOLEK -->
             <div class="vials-container">
-                
-                <!-- Fiolka Pawła -->
                 <div class="vial-wrapper">
                     <div class="vial-title">👦 Paweł</div>
                     <div class="vial-pts" id="pts-vial-pawel">0 pkt</div>
@@ -100,7 +98,6 @@
                     </div>
                 </div>
 
-                <!-- Fiolka Rodzinna (Wspólna) -->
                 <div class="vial-wrapper vial-shared">
                     <div class="vial-title">🚗 Rodzina</div>
                     <div class="vial-pts" id="pts-vial-shared">0 pkt</div>
@@ -110,7 +107,6 @@
                     </div>
                 </div>
 
-                <!-- Fiolka Madzi -->
                 <div class="vial-wrapper">
                     <div class="vial-title">👧 Madzia</div>
                     <div class="vial-pts" id="pts-vial-madzia">0 pkt</div>
@@ -119,15 +115,26 @@
                         <div class="vial-marks" id="marks-madzia"></div>
                     </div>
                 </div>
+            </div>
 
+            <!-- SEKCJA SKLEPIKU DZIENNYCH NAGRÓD -->
+            <div class="shop-section">
+                <div class="shop-header">
+                    <span>🛒 Dzienny Sklepik Nagród</span>
+                    <span class="shop-budget" id="shop-budget-display">Budżet dziś: 0 pkt</span>
+                </div>
+                <div class="shop-items" id="shop-items-container"></div>
             </div>
 
             <!-- Zarządzanie Celami w Trybie Rodzica -->
             <div class="parent-goals-manager">
-                <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 6px;">
-                    🛠️ Zarządzaj Celami / Nagrodami:
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 6px;">
+                    🛠️ Panel Rodzica (Dodawanie):
                 </div>
-                <button class="btn-add-goal" onclick="addNewGoalPrompt()">➕ Dodaj nową nagrodę do fiolki</button>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn-add-goal" onclick="addNewGoalPrompt()">➕ Długoterminowy cel</button>
+                    <button class="btn-add-goal" style="background: var(--accent-blue); color:#000;" onclick="addNewShopItemPrompt()">🛒 Dzienny Kupon</button>
+                </div>
             </div>
 
         </div>
