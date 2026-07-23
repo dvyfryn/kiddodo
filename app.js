@@ -6,19 +6,16 @@ const PARENT_PIN = "1234";
 
 let isHappyHourActive = false;
 
-// Punkty w rankingach (Niezmienne przy kupowaniu kuponów!)
 let scores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-// Dzienny budżet na kupony (pomniejszany tylko po zakupie kuponu)
 let shopBudget = {
     Paweł: 0,
     Madzia: 0
 };
 
-// Oferta dziennych kuponów
 let shopItems = [
     { id: 1, icon: "📱", name: "+1h Family Link / Konsola", cost: 20 },
     { id: 2, icon: "⚽", name: "+1h Dodatkowa na dworze", cost: 10 },
@@ -57,6 +54,12 @@ function closeRankingModal() {
     document.getElementById('ranking-modal').classList.remove('open');
 }
 
+// Przełączanie aktywnego dziecka bezpośrednio z poziomu nagłówków w okienku Fiolek
+function selectKidInModal(kidName) {
+    const targetChip = kidName === 'Paweł' ? document.getElementById('chip-pawel') : document.getElementById('chip-madzia');
+    filterTasks(kidName, targetChip);
+}
+
 function triggerConfetti() {
     confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
 }
@@ -76,6 +79,16 @@ function updateVials() {
     document.getElementById('pts-vial-pawel').innerText = `${pPts} pkt`;
     document.getElementById('pts-vial-madzia').innerText = `${mPts} pkt`;
     document.getElementById('pts-vial-shared').innerText = `${sharedPts} pkt`;
+
+    // Wyróżnienie zaznaczonego nagłówka imienia w okienku
+    const tPawel = document.getElementById('vial-title-pawel');
+    const tMadzia = document.getElementById('vial-title-madzia');
+
+    tPawel.classList.remove('selected');
+    tMadzia.classList.remove('selected');
+
+    if (currentFilter === 'Paweł') tPawel.classList.add('selected');
+    if (currentFilter === 'Madzia') tMadzia.classList.add('selected');
 
     renderVialLiquid('pawel', pPts, goalsData.Paweł);
     renderVialLiquid('madzia', mPts, goalsData.Madzia);
@@ -113,7 +126,6 @@ function clickGoalIcon(name, target, current) {
     }
 }
 
-// AKTUALIZACJA SEKCJI SKLEPIKU DZIENNEGO
 function updateShopUI() {
     let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
     const budget = shopBudget[targetKid];
@@ -140,7 +152,6 @@ function updateShopUI() {
     });
 }
 
-// ZAKUP KUPONU Przez Dziecko (Uszczupla tylko budżet dzienny sklepiku)
 function buyCoupon(itemName, cost, kidName) {
     if (shopBudget[kidName] < cost) return alert("Brak wystarczającej ilości dziennych punktów!");
 
@@ -151,27 +162,32 @@ function buyCoupon(itemName, cost, kidName) {
     updateShopUI();
 }
 
-// Aktywacja "Happy Hour x3" (Działa tylko na 1 najbliższy quest)
 function activateHappyHour() {
     if (!isParentMode) return;
 
     isHappyHourActive = true;
     document.getElementById('boost-banner').classList.add('active');
     triggerConfetti();
-    alert("⚡ Aktywowano Happy Hour! PIERWSZY zrobiony Quest dostanie x3 punktów!");
+    alert("✨ Aktywowano Magiczne Happy Hour! PIERWSZY zrobiony Quest da x3 punktów!");
 }
 
 function toggleTask(btn) {
     const card = btn.closest('.task-card');
     const assignee = card.getAttribute('data-assignee');
     let points = parseInt(card.getAttribute('data-points')) || 0;
+    const badge = card.querySelector('.points-badge');
 
-    // Przelicznik Happy Hour (Mnoży x3 tylko raz)
+    // Mnożnik Happy Hour
     if (isHappyHourActive && !card.classList.contains('completed')) {
         points = points * 3;
         isHappyHourActive = false;
         document.getElementById('boost-banner').classList.remove('active');
-        alert("🎉 Wykorzystano bonus Happy Hour x3!");
+        
+        // Zapisanie i wyrenderowanie pomnożonej wartości w karcie zadania
+        card.setAttribute('data-points', points);
+        if (badge) badge.innerText = `+${points} pkt (x3!)`;
+        
+        alert("🎉 Zrobiono Quest w trakcie Happy Hour! Punkty pomnożone x3!");
     }
 
     card.classList.toggle('completed');
@@ -180,13 +196,11 @@ function toggleTask(btn) {
         btn.classList.add('done');
         btn.innerHTML = '<i class="fa-solid fa-check-double"></i>';
 
-        // Punkty do głównych fiolek i rankingów
         scores[assignee].daily += points;
         scores[assignee].weekly += points;
         scores[assignee].monthly += points;
         scores[assignee].yearly += points;
 
-        // Dzienny budżet do wydania w sklepiku
         shopBudget[assignee] += points;
 
         triggerConfetti();
@@ -242,7 +256,7 @@ function addNewShopItemPrompt() {
 function filterTasks(assignee, chipBtn) {
     currentFilter = assignee;
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    chipBtn.classList.add('active');
+    if (chipBtn) chipBtn.classList.add('active');
 
     const cards = document.querySelectorAll('.task-card');
     cards.forEach(card => {
@@ -254,6 +268,7 @@ function filterTasks(assignee, chipBtn) {
         }
     });
 
+    updateVials();
     updateShopUI();
 }
 
