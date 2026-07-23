@@ -4,18 +4,28 @@ let isParentMode = false;
 let isTileDeleteMode = false;
 const PARENT_PIN = "1234";
 
+let boostMultiplier = 1;
+let boostTimerInterval = null;
+
 let scores = {
     Paweł: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
     Madzia: { daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 };
 
-let individualCheckpoints = [
-    { id: 1, name: "🍦 Wyjście na lody", target: 30 },
-    { id: 2, name: "🎬 Wieczór filmowy z przekąskami", target: 80 },
-    { id: 3, name: "🎁 Wymarzona niespodzianka", target: 200 }
-];
-
-let sharedYearlyCheckpoint = { id: 99, name: "🚗 Wycieczka rodzinna (Wspólny cel)", target: 1000 };
+// Dedykowane cele/nagrody dla Pawła, Madzi oraz Rodziny
+let goalsData = {
+    Paweł: [
+        { id: 1, icon: "🍦", name: "Lody", target: 30 },
+        { id: 2, name: "🎮 Gra na konsole", icon: "🎮", target: 100 }
+    ],
+    Madzia: [
+        { id: 3, icon: "🍦", name: "Lody", target: 30 },
+        { id: 4, icon: "🎨 Zestaw plastyczny", name: "Zestaw artystyczny", target: 80 }
+    ],
+    Shared: [
+        { id: 99, icon: "🚗", name: "Wycieczka Rodzinna", target: 500 }
+    ]
+};
 
 let questTilesData = [
     { id: 1, title: "Ścielenie łóżka", points: 5 },
@@ -23,13 +33,12 @@ let questTilesData = [
     { id: 3, title: "Wyniesienie śmieci", points: 5 },
     { id: 4, title: "Wyprowadzenie psa", points: 10 },
     { id: 5, title: "Podlewanie kwiatów", points: 5 },
-    { id: 6, title: "Sprzątanie pokoju", points: 10 }
+    { id: 6, title: "Bałagan w pokoju", points: -10 } // Kafelek ujemny!
 ];
 
-// Otwieranie / zamykanie okna z rankingiem
 function openRankingModal() {
     document.getElementById('ranking-modal').classList.add('open');
-    updateDashboard();
+    updateVials();
 }
 
 function closeRankingModal() {
@@ -37,167 +46,144 @@ function closeRankingModal() {
 }
 
 function triggerConfetti() {
-    confetti({ particleCount: 100, spread: 100, origin: { y: 0.6 } });
-    setTimeout(() => {
-        confetti({
-            particleCount: 50,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: ['#a855f7', '#f59e0b', '#38bdf8']
-        });
-        confetti({
-            particleCount: 50,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: ['#a855f7', '#f59e0b', '#38bdf8']
-        });
-    }, 200);
+    confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
 }
 
 function switchPeriod(period, tabBtn) {
     currentPeriod = period;
     document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
     tabBtn.classList.add('active');
-    updateDashboard();
+    updateVials();
 }
 
-function updateDashboard() {
+// Aktualizacja wyglądu 3 fiolek
+function updateVials() {
     const pPts = scores.Paweł[currentPeriod];
     const mPts = scores.Madzia[currentPeriod];
+    const sharedPts = scores.Paweł.yearly + scores.Madzia.yearly;
 
-    document.getElementById('score-pawel').innerText = `${pPts} pkt`;
-    document.getElementById('score-madzia').innerText = `${mPts} pkt`;
+    document.getElementById('pts-vial-pawel').innerText = `${pPts} pkt`;
+    document.getElementById('pts-vial-madzia').innerText = `${mPts} pkt`;
+    document.getElementById('pts-vial-shared').innerText = `${sharedPts} pkt`;
 
-    const boxP = document.getElementById('box-pawel');
-    const boxM = document.getElementById('box-madzia');
-    boxP.classList.remove('leader');
-    boxM.classList.remove('leader');
+    renderVialLiquid('pawel', pPts, goalsData.Paweł);
+    renderVialLiquid('madzia', mPts, goalsData.Madzia);
+    renderVialLiquid('shared', sharedPts, goalsData.Shared);
+}
 
-    if (pPts > mPts && pPts > 0) boxP.classList.add('leader');
-    if (mPts > pPts && mPts > 0) boxM.classList.add('leader');
+function renderVialLiquid(vialKey, currentPts, goalsList) {
+    const maxTarget = goalsList.length > 0 ? Math.max(...goalsList.map(g => g.target)) : 100;
+    const heightPercent = Math.min(100, Math.round((currentPts / maxTarget) * 100));
 
-    const container = document.getElementById('checkpoints-container');
-    container.innerHTML = '';
+    document.getElementById(`liquid-${vialKey}`).style.height = `${heightPercent}%`;
 
-    let targetKid = currentFilter === 'all' ? 'Paweł' : currentFilter;
-    document.getElementById('checkpoints-label').innerText = `🏆 Cele dla: ${targetKid}`;
+    const marksContainer = document.getElementById(`marks-${vialKey}`);
+    marksContainer.innerHTML = '';
 
-    individualCheckpoints.forEach(cp => {
-        const kidScore = scores[targetKid][currentPeriod];
-        const percent = Math.min(100, Math.round((kidScore / cp.target) * 100));
-        const isReady = kidScore >= cp.target;
+    goalsList.forEach(goal => {
+        const markPos = Math.min(100, Math.round((goal.target / maxTarget) * 100));
+        const mark = document.createElement('div');
+        mark.className = 'mark-item';
+        mark.style.bottom = `${markPos}%`;
 
-        const item = document.createElement('div');
-        item.className = 'checkpoint-item';
-        item.innerHTML = `
-            <div class="checkpoint-header">
-                <span>
-                    ${cp.name} 
-                    <button class="btn-edit-cp" onclick="editCheckpoint(${cp.id})" title="Edytuj cel"><i class="fa-solid fa-pen"></i></button>
-                </span>
-                <span>${kidScore} / ${cp.target} pkt</span>
-            </div>
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width: ${percent}%;"></div>
-            </div>
-            <button class="btn-claim ${isReady ? 'ready' : ''}" onclick="claimReward('${cp.name}', '${targetKid}')">
-                🎉 Zrealizuj nagrodę dla: ${targetKid}
-            </button>
+        mark.innerHTML = `
+            <span class="mark-icon" onclick="clickGoalIcon('${goal.name}', ${goal.target}, ${currentPts})">${goal.icon}</span>
         `;
-        container.appendChild(item);
+        marksContainer.appendChild(mark);
     });
-
-    const totalYearly = scores.Paweł.yearly + scores.Madzia.yearly;
-    const sharedPercent = Math.min(100, Math.round((totalYearly / sharedYearlyCheckpoint.target) * 100));
-    const isSharedReady = totalYearly >= sharedYearlyCheckpoint.target;
-
-    const sharedItem = document.createElement('div');
-    sharedItem.className = 'checkpoint-item shared';
-    sharedItem.innerHTML = `
-        <div class="checkpoint-header">
-            <span>
-                ${sharedYearlyCheckpoint.name}
-                <button class="btn-edit-cp" onclick="editSharedCheckpoint()" title="Edytuj cel rodzinny"><i class="fa-solid fa-pen"></i></button>
-            </span>
-            <span>${totalYearly} / ${sharedYearlyCheckpoint.target} pkt</span>
-        </div>
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width: ${sharedPercent}%;"></div>
-        </div>
-        <button class="btn-claim ${isSharedReady ? 'ready' : ''}" onclick="claimReward('${sharedYearlyCheckpoint.name}', 'Cała Rodzina')">
-            🚗 Zrealizuj Wycieczkę Rodzinną!
-        </button>
-    `;
-    container.appendChild(sharedItem);
 }
 
-function editCheckpoint(id) {
-    if (!isParentMode) return;
-    const cp = individualCheckpoints.find(c => c.id === id);
-    if (!cp) return;
-
-    const newName = prompt("Nowa nazwa nagrody:", cp.name);
-    if (newName === null) return;
-
-    const newTarget = prompt("Nowy próg punktowy:", cp.target);
-    if (newTarget === null) return;
-
-    cp.name = newName.trim() || cp.name;
-    cp.target = parseInt(newTarget) || cp.target;
-
-    updateDashboard();
+function clickGoalIcon(name, target, current) {
+    if (current >= target) {
+        triggerConfetti();
+        alert(`🎉 Cel "${name}" został osiągnięty! Rodzic może wręczyć nagrodę!`);
+    } else {
+        alert(`Cel: "${name}". Wymagane ${target} pkt (Masz: ${current} pkt). Brakuje: ${target - current} pkt.`);
+    }
 }
 
-function editSharedCheckpoint() {
+// Dodawanie nowej nagrody do fiolki w Trybie Rodzica
+function addNewGoalPrompt() {
     if (!isParentMode) return;
 
-    const newName = prompt("Nowa nazwa celu rodzinnego:", sharedYearlyCheckpoint.name);
-    if (newName === null) return;
+    const owner = prompt("Dla kogo ta nagroda? Wpisz: Paweł, Madzia lub Rodzina").trim();
+    if (!['Paweł', 'Madzia', 'Rodzina'].includes(owner)) return alert("Błędny wybór osoby!");
 
-    const newTarget = prompt("Nowy próg punktowy:", sharedYearlyCheckpoint.target);
-    if (newTarget === null) return;
+    const icon = prompt("Wpisz emoji dla celu (np. 🍦, 🎮, 🚴‍♂️, 🏖️):", "🎁");
+    const name = prompt("Podaj nazwę celu/nagrody:");
+    const target = parseInt(prompt("Podaj wymagany próg punktowy:"));
 
-    sharedYearlyCheckpoint.name = newName.trim() || sharedYearlyCheckpoint.name;
-    sharedYearlyCheckpoint.target = parseInt(newTarget) || sharedYearlyCheckpoint.target;
+    if (!name || !target) return alert("Wypełnij wszystkie dane!");
 
-    updateDashboard();
+    const key = owner === 'Rodzina' ? 'Shared' : owner;
+    goalsData[key].push({ id: Date.now(), icon: icon || "🎁", name: name, target: target });
+
+    updateVials();
+    alert("Dodano nowy cel do fiolki!");
 }
 
-function claimReward(rewardName, winner) {
+// Aktywacja Power-Up x3 na 1 godzinę
+function activateBoost() {
+    if (!isParentMode) return;
+
+    boostMultiplier = 3;
+    const banner = document.getElementById('boost-banner');
+    banner.classList.add('active');
+
+    let duration = 3600; // 1 godzina w sekundach
+    clearInterval(boostTimerInterval);
+
+    boostTimerInterval = setInterval(() => {
+        duration--;
+        const m = Math.floor(duration / 60);
+        const s = duration % 60;
+        document.getElementById('boost-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+
+        if (duration <= 0) {
+            clearInterval(boostTimerInterval);
+            boostMultiplier = 1;
+            banner.classList.remove('active');
+            alert("Czas Bonusu x3 dobiegł końca!");
+        }
+    }, 1000);
+
     triggerConfetti();
-    alert(`GRATULACJE! ${winner} odbiera nagrodę:\n"${rewardName}"! 🎁`);
+    alert("⚡ Aktywowano Bonus x3 na 1 godzinę!");
 }
 
 function toggleTask(btn) {
     const card = btn.closest('.task-card');
     const assignee = card.getAttribute('data-assignee');
-    const points = parseInt(card.getAttribute('data-points')) || 0;
+    let points = parseInt(card.getAttribute('data-points')) || 0;
+
+    // Przelicznik bonusowy x3 działa tylko dla dodatnich punktów
+    if (points > 0 && boostMultiplier > 1) {
+        points = points * boostMultiplier;
+    }
 
     card.classList.toggle('completed');
-    
+
     if (card.classList.contains('completed')) {
         btn.classList.add('done');
         btn.innerHTML = '<i class="fa-solid fa-check-double"></i>';
-        
+
         scores[assignee].daily += points;
         scores[assignee].weekly += points;
         scores[assignee].monthly += points;
         scores[assignee].yearly += points;
-        
+
         triggerConfetti();
     } else {
         btn.classList.remove('done');
         btn.innerHTML = '<i class="fa-solid fa-check"></i>';
-        
-        scores[assignee].daily = Math.max(0, scores[assignee].daily - points);
-        scores[assignee].weekly = Math.max(0, scores[assignee].weekly - points);
-        scores[assignee].monthly = Math.max(0, scores[assignee].monthly - points);
-        scores[assignee].yearly = Math.max(0, scores[assignee].yearly - points);
+
+        scores[assignee].daily -= points;
+        scores[assignee].weekly -= points;
+        scores[assignee].monthly -= points;
+        scores[assignee].yearly -= points;
     }
 
-    updateDashboard();
+    updateVials();
 }
 
 function filterTasks(assignee, chipBtn) {
@@ -214,8 +200,6 @@ function filterTasks(assignee, chipBtn) {
             card.style.display = 'none';
         }
     });
-
-    updateDashboard();
 }
 
 function renderTiles() {
@@ -226,14 +210,16 @@ function renderTiles() {
 
     questTilesData.forEach(tile => {
         const wrapper = document.createElement('div');
-        wrapper.className = 'quest-tile-wrapper';
+        const isNegative = tile.points < 0;
+        wrapper.className = `quest-tile-wrapper ${isNegative ? 'minus' : ''}`;
         wrapper.setAttribute('data-title', tile.title.toLowerCase());
 
         const safeTitle = tile.title.replace(/'/g, "\\'");
-        
+        const ptsLabel = isNegative ? `${tile.points}` : `+${tile.points}`;
+
         wrapper.innerHTML = `
             <button class="quest-tile" onclick="addQuestFromTile('${safeTitle}', ${tile.points})">
-                🎯 ${tile.title} (+${tile.points})
+                ${isNegative ? '⚠️' : '🎯'} ${tile.title} (${ptsLabel})
             </button>
             <button class="btn-delete-tile" onclick="confirmRemoveTile(${tile.id}, '${safeTitle}')" title="Usuń kafelek">
                 <i class="fa-solid fa-xmark"></i>
@@ -308,13 +294,17 @@ function addQuestFromTile(title, points) {
 function createQuestCard(title, points, assignee) {
     const list = document.getElementById('tasks-list');
     const newTask = document.createElement('div');
-    newTask.className = 'task-card';
+    const isNegative = points < 0;
+
+    newTask.className = `task-card ${isNegative ? 'negative' : ''}`;
     newTask.setAttribute('data-assignee', assignee);
     newTask.setAttribute('data-points', points);
-    
+
+    const ptsLabel = isNegative ? `${points}` : `+${points}`;
+
     newTask.innerHTML = `
         <div class="task-info">
-            <div class="task-title">${title} <span class="points-badge">+${points} pkt</span></div>
+            <div class="task-title">${title} <span class="points-badge ${isNegative ? 'minus' : ''}">${ptsLabel} pkt</span></div>
             <div class="assignee-badge"><i class="fa-solid fa-user"></i> ${assignee}</div>
         </div>
         <div class="task-actions">
@@ -353,7 +343,7 @@ function toggleParentMode() {
         document.getElementById('btn-tile-delete-toggle').classList.remove('delete-mode-active');
         lockIcon.className = "fa-solid fa-lock";
     }
-    updateDashboard();
+    updateVials();
 }
 
 function deleteTask(btn) {
